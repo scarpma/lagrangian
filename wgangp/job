@@ -1,0 +1,2 @@
+python wgan.py --ncritic 30 >& log.txt &
+tail -f log.txt
