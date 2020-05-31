@@ -10,12 +10,20 @@ def acf(x):
     return  result[result.size // 2:] / result[result.size // 2]
 
 
-def acf_gen_x(db):
+def acf_gen_mean_x(db):
     acfs = acf(db[0,:,0])
     for i in range(1,db.shape[0]):
         acfs += acf(db[i,:,0])
     
     return acfs / (db.shape[0] + 1)
+
+def acf_gen_x(db):
+    acfs = np.ndarray(shape=db.shape)
+    leng = db.shape[0]
+    for i in range(leng):
+        acfs[i,:,0] = acf(db[i,:,0])
+        print(i,'/',leng,end='\r')
+    return acfs
 
 
 def exit_time(paths, soglia):

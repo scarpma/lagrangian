@@ -227,7 +227,7 @@ class WGANGP():
                 # Train the critic
                 d_loss = self.critic_model.train_on_batch([imgs, noise],
                                                            [valid, fake, dummy])
-                print(d_loss)
+                #print(d_loss)
                 fl.write("%7d %13.7g %13.7g %13.7g %13.7g %13.7g %13.7g %13.7g %13.7g %13.7g\n"%(epoch,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss))
 
             # ---------------------
@@ -265,8 +265,8 @@ class WGANGP():
 if __name__ == '__main__' :
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', type=int, default=20000)
-    parser.add_argument('--ncritic', type=int, default=5)
+    parser.add_argument('--epochs', type=int, default=1000)
+    parser.add_argument('--ncritic', type=int, default=30)
     parser.add_argument('--load', type=int, default=[0], nargs=2)
     args = parser.parse_args()
     epochs = args.epochs
@@ -290,7 +290,7 @@ if __name__ == '__main__' :
         # scrivo stringa info log gen #
         text = f"continuo run {run} from number {number}"
     else:
-        fs=(20,1)
+        fs=(100,1)
         fm=256
         init_sigma = 0.003
         init_mean = 0.0
@@ -298,7 +298,7 @@ if __name__ == '__main__' :
         # scrivo stringa info log gen #
         text = f"GEN\n{fs,fm,init_sigma,init_mean,noise_dim,alpha}\n"
         gen = build_generator(fs,fm,init_sigma,init_mean,alpha,noise_dim)
-        fs = 20
+        fs = 100
         fm = 256
         init_sigma = 0.02
         init_mean = 0.0
@@ -311,6 +311,6 @@ if __name__ == '__main__' :
             
             
             
-    wgan = WGANGP(gen, critic, noise_dim, ncritic, 125, text)
+    wgan = WGANGP(gen, critic, noise_dim, ncritic, 500, text)
     print(f'train for {epochs} epochs')
     wgan.train(epochs, db_train, db_test)
