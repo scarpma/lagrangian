@@ -31,15 +31,14 @@ def exit_time(paths, soglia):
         etx = []
         ety = []
         etz = []
-        r = float(path[-8:-4])
-        print(f'computing exit time for r={r}, {0:5}', end='\r')
+        print(f'computing exit time, {0:5}', end='\r')
         db = np.load(path)
-        sig_len = len(db[0,0,:])
+        sig_len = len(db[0,:,0])
         n_traj = len(db[:,0,0])
         for traj, ii in zip(db, range(n_traj)):
-            if ii == 49999: print(f'computing exit time for r={r}, {ii:5}', end=' ')
-            else: print(f'computing exit time for r={r}, {ii:5}', end='\r')
-            a = traj[0,:]
+            if ii == n_traj-1: print(f'computing exit time for {ii:5}', end=' ')
+            else: print(f'computing exit time for {ii:5}', end='\r')
+            a = traj[:,0]
             #b = traj[1,:]
             #c = traj[2,:]
             a -= np.mean(a)
@@ -60,32 +59,36 @@ def exit_time(paths, soglia):
             #    if y < soglia :
             #        etz.append(t)
             #        break
-        np.save(f'/scratch/scarpolini/databases/exit_time_{soglia:.2f}_lorenz_{r:.1f}', [etx])
+        np.save(f'/scratch/scarpolini/databases/exit_time_{soglia:.2f}_lagrangian', [etx])
         print('Saved!')
         
-        
-def gen_exit_time(paths, soglia):
+
+def gen_exit_time(run, number, soglia):
+    paths = [f'data/acf_x_gen_{run}_{number}.npy']
     for jj, path in enumerate(paths):
         etx = []
-        # r = float(path[-8:-4])
-        r = 54
-        print(f'computing exit time for r={r}, {0:5}', end='\r')
+        ety = []
+        etz = []
+        print(f'computing exit time, {0:5}', end='\r')
         db = np.load(path)
         sig_len = len(db[0,:,0])
         n_traj = len(db[:,0,0])
-        for traj, ii in zip(db, range(n_traj)):
-            if ii == 49999: print(f'computing exit time for r={r}, {ii:5}', end=' ')
-            else: print(f'computing exit time for r={r}, {ii:5}', end='\r')
-            a = traj[:,0]
-            a -= np.mean(a)
-            acfx = acf(a)
+        for acfx, ii in zip(db, range(n_traj)):
+            if ii%1000==0: print(f'computing exit time, {ii:5}', end='\r')
             for t in range(len(acfx)):
                 if acfx[t] < soglia :
-                    etx.append((1.)/(acfx[t]-acfx[t-1])*(0.5-acfx[t-1]) + t - 1.) ### interpolazione lineare
+                    etx.append(float((1.)/(acfx[t]-acfx[t-1])*(0.5-acfx[t-1]) + t - 1.)) ### interpolazione lineare
                     break
-        np.save(f'/scratch/scarpolini/databases/gen_exit_time_{soglia:.2f}_lorenz_{r:.1f}', [etx])
-        print('Saved!')
-
+            #for t, y in enumerate(acfy):
+            #    if y < soglia :
+            #        ety.append(t)
+            #        break
+            #for t, y in enumerate(acfz):
+            #    if y < soglia :
+            #        etz.append(t)
+            #        break
+    return [etx]
+        
 def load_acf(r):
     path = f'/scratch/scarpolini/databases/acfe_lorenz_{r:.1f}.npy'
     acf = np.load(path)

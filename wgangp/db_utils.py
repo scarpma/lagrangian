@@ -18,6 +18,7 @@ from functools import partial
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 
 #def load_data():

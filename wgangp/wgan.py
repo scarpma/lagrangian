@@ -22,8 +22,9 @@ class RandomWeightedAverage(tensorflow.keras.layers.Layer):
 
 class WGANGP():
     def __init__(self,gen,critic,noise_dim,n_critic,batch_size,text):
-        self.d_losses = []
-        self.g_losses = []
+        #self.d_losses = []
+        #self.d_losses_test = []
+        #self.g_losses = []
         self.real_critics = []
         self.fake_critics = []
         self.sig_len = 2000
@@ -59,7 +60,7 @@ class WGANGP():
         self.gen.trainable = False
 
         # Image input (real sample)
-        real_img = Input(shape=(2000,1))
+        real_img = Input(shape=(self.sig_len,self.channels))
 
         # Noise input
         z_disc = Input(shape=(self.noise_dim,))
@@ -161,35 +162,6 @@ class WGANGP():
         plt.savefig(self.dir_path+f'{epoch}_critic_pred.png', fmt='png', dpi=100)
         plt.close()
     
-    def plot_training(self):
-        fig, (ax1, ax2) = plt.subplots(1,2,figsize=(16,5))
-        ax1.set_xlabel('epochs')
-        ax2.set_xlabel('epochs')
-        ax1.set_title('Losses')
-        ax2.set_title('Critic predictions')
-        ax1.plot(self.d_losses, label='critic loss')
-        ax1.plot(self.g_losses, label='generator loss')
-        fake_critic = [a[0] for a in self.fake_critics]
-        fake_critice = [a[1] for a in self.fake_critics]
-        real_critic = [a[0] for a in self.real_critics]
-        real_critice = [a[1] for a in self.real_critics]
-        n_epochs = len(fake_critic)
-        l, caps, c = ax2.errorbar(range(n_epochs), fake_critic, fake_critice,lw=0,
-                                  marker='^', ms=2, elinewidth=1, uplims=True,
-                                  lolims=True, capsize=1, label='fake')
-        for cap in caps:
-            cap.set_marker("_")
-        l, caps, c = ax2.errorbar(range(n_epochs), real_critic, real_critice, lw=0,
-                                  marker='^', ms=2, elinewidth=1, uplims=True,
-                                  lolims=True, capsize=1, label='real')
-        for cap in caps:
-            cap.set_marker("_")
-            
-        ax1.legend()
-        ax2.legend()
-        plt.savefig(self.dir_path+f'training.png', fmt='png', dpi=100)
-        plt.close()
-
     def train(self, epochs, db_train, db_test):
         
         # salvo info log #
@@ -224,6 +196,7 @@ class WGANGP():
                 imgs = db_train[idx]
                 # Sample generator input
                 noise = np.random.normal(0, 1, (self.batch_size, self.noise_dim))
+                #noise = np.random.uniform(-1., 1., (self.batch_size, self.noise_dim))
                 # Train the critic
                 d_loss = self.critic_model.train_on_batch([imgs, noise],
                                                            [valid, fake, dummy])
@@ -239,8 +212,9 @@ class WGANGP():
             d_loss_test = self.critic_model.test_on_batch([imgs, noise],
                                                           [valid, fake, dummy])
             g_loss = self.gen_model.train_on_batch(noise, valid)
-            self.g_losses.append(g_loss)
-            self.d_losses.append(d_loss)
+            #self.g_losses.append(g_loss)
+            #self.d_losses.append(d_loss)
+            #self.d_losses_test.append(d_loss_test)
 
             # Plot the progress
             print(f"{epoch} [D loss: {d_loss[0]:6.2g}] [d_loss_test: {d_loss_test[0]:6.2g}] [G loss: {g_loss:6.2g}]")
@@ -258,7 +232,6 @@ class WGANGP():
         fl.close()
         self.critic.save(self.dir_path+f'{epochs-1}_critic.h5')
         self.gen.save(self.dir_path+f'{epochs-1}_gen.h5')
-        self.plot_training()
         
 
             
@@ -290,16 +263,16 @@ if __name__ == '__main__' :
         # scrivo stringa info log gen #
         text = f"continuo run {run} from number {number}"
     else:
-        fs=(100,1)
-        fm=256
+        fs=(250,1)
+        fm=128
         init_sigma = 0.003
         init_mean = 0.0
         alpha = 0.2
         # scrivo stringa info log gen #
         text = f"GEN\n{fs,fm,init_sigma,init_mean,noise_dim,alpha}\n"
         gen = build_generator(fs,fm,init_sigma,init_mean,alpha,noise_dim)
-        fs = 100
-        fm = 256
+        fs = 250
+        fm = 128
         init_sigma = 0.02
         init_mean = 0.0
         alpha = 0.2

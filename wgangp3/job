@@ -1,0 +1,2 @@
+python wgan.py --epochs 10000 >& log.txt &
+tail -f log.txt
