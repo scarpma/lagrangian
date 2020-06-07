@@ -38,3 +38,32 @@ def create_log_bins(xmin,xmax,nbin,eps):
     else:
         print("problem")
         return 0
+    
+
+def kurtosis(x,p):
+    import numpy as np
+    if len(x) == len(p):
+        dx = []
+        for i in range(len(p)-1):
+            dx.append(x[i+1] - x[i])
+        dx.append(dx[-1])
+        dx = np.array(dx)
+    elif len(x) == len(p)+1:
+        dx = []
+        for i in range(len(p)):
+            dx.append(x[i+1] - x[i])
+            x[i] = ( x[i] + x[i+1] ) / 2.
+        x = x[:-1]
+        dx = np.array(dx)
+    else: 
+        print('problem')
+        return 0
+    
+    mean = np.sum(x*p*dx)
+    std = np.sqrt(np.sum((x-mean)**2.*p*dx))
+    x = (x-mean)/std
+    p = p * std
+    
+    dx /= std
+    mom4 = np.sum((x-mean)**4.*p*dx)
+    return mom4
