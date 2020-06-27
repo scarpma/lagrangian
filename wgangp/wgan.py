@@ -224,7 +224,7 @@ class WGANGP():
             if epoch % 100 == 0:
                 self.plot_trajs(self.gen.predict(np.random.normal(0,1, size=(3,self.noise_dim))), epoch)
                 #self.plot_disc_predictions(fake_critic, real_critic, epoch, batch_size)
-            if epoch % 1000 == 0:    
+            if epoch % 250 == 0:    
                 self.critic.save(self.dir_path+f'{epoch}_critic.h5')
                 self.gen.save(self.dir_path+f'{epoch}_gen.h5')
 
