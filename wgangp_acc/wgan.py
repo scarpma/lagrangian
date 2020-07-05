@@ -42,8 +42,8 @@ class WGANGP():
         # Following parameter and optimizer set as recommended in paper
         self.n_critic = n_critic
         # optimizer = RMSprop(lr=0.00005)
-        optimizer = Adam(learning_rate=0.0001, beta_1=0.5,beta_2=0.9)
-        # optimizer = Adam(0.00005)
+        # optimizer = Adam(learning_rate=0.0001, beta_1=0.5,beta_2=0.9)
+        optimizer = Adam(learning_rate=0.00005, beta_1=0.5,beta_2=0.9)
         # optimizer = Adam(0.000005)
 
 

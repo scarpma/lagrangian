@@ -42,7 +42,8 @@ class WGANGP():
         # Following parameter and optimizer set as recommended in paper
         self.n_critic = n_critic
         # optimizer = RMSprop(lr=0.00005)
-        optimizer = Adam(learning_rate=0.0001, beta_1=0.5,beta_2=0.9)
+        # optimizer = Adam(learning_rate=0.0001, beta_1=0.5,beta_2=0.9)
+        optimizer = Adam(learning_rate=0.0001, beta_1=0.,beta_2=0.9)
         # optimizer = Adam(0.00005)
         # optimizer = Adam(0.000005)
 
@@ -153,15 +154,8 @@ class WGANGP():
         plt.tight_layout()
         plt.savefig(self.dir_path+f'{epoch}_gen_traj.png', fmt='png', dpi=100)
         plt.close()
-
-    def plot_disc_predictions(self, fake_disc, real_disc, epoch, batch_size=250):
-        plt.figure()
-        plt.plot(real_disc, label='real')
-        plt.plot(fake_disc, label='fake')
-        plt.legend()
-        plt.savefig(self.dir_path+f'{epoch}_critic_pred.png', fmt='png', dpi=100)
-        plt.close()
-    
+   
+ 
     def train(self, epochs, db_train, db_test):
         
         # salvo info log #
@@ -169,7 +163,8 @@ class WGANGP():
             f.write(f"TRAINING\nncritic={self.n_critic}\nepochs={epochs}\n")
             f.write(self.text)
         fl = open(self.dir_path+'training.dat','a+')
-        fl.write(f"# iter, d_loss_tot, d_loss_true, d_loss_fake, d_loss_gp, d_loss_tot_test, d_loss_true_test, d_loss_fake_test, d_loss_gp_test, g_loss\n")
+        fl.write(f"# epoch, gen_iteration, critic_iteration, d_loss_tot, d_loss_true, d_loss_fake, d_loss_gp, d_loss_tot_test, d_loss_true_test, d_loss_fake_test, d_loss_gp_test, g_loss\n")
+        fl.close()
 
         # ############## #
         
@@ -180,73 +175,83 @@ class WGANGP():
         valid = -np.ones((self.batch_size, 1))
         fake =  np.ones((self.batch_size, 1))
         dummy = np.zeros((self.batch_size, 1)) # Dummy gt for gradient penalty
-        
+        gen_iters = db_train.shape[0]//(self.n_critic*self.batch_size)
+        print(f"Generator iterations per epoch: {gen_iters}")
+
         print(f'\nNCRITIC = {self.n_critic}\n')
- 
+        
         for epoch in range(epochs):
 
-            for _ in range(self.n_critic):
+            for gen_iter in range(gen_iters):            
+
+                fl = open(self.dir_path+'training.dat','a+')
+                for jj in range(self.n_critic):
+
+                    # ---------------------
+                    #  Train Discriminator
+                    # ---------------------
+
+                    # Select a random batch of images
+                    idx = np.random.randint(0, db_train.shape[0], self.batch_size)
+                    # select a precise batch of images
+                    # batch_start = (gen_iter * self.n_critic + jj) * self.batch_size
+                    # batch_end = (gen_iter * self.n_critic + jj + 1) * self.batch_size
+                    # idx = np.arange(batch_start, batch_end)
+                    imgs = db_train[idx]
+                    # Sample generator input
+                    noise = np.random.normal(0, 1, (self.batch_size, self.noise_dim))
+                    #noise = np.random.uniform(-1., 1., (self.batch_size, self.noise_dim))
+                    # Train the critic
+                    d_loss = self.critic_model.train_on_batch([imgs, noise],
+                                                               [valid, fake, dummy])
+                    #print(d_loss)
+                    fl.write("%7d %7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n"%(epoch,epoch*gen_iters+gen_iter,(epoch*gen_iters+gen_iter)*self.n_critic+jj,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss))
 
                 # ---------------------
-                #  Train Discriminator
+                #  Train Generator
                 # ---------------------
 
-                # Select a random batch of images
-                idx = np.random.randint(0, db_train.shape[0], self.batch_size)
-                imgs = db_train[idx]
-                # Sample generator input
-                noise = np.random.normal(0, 1, (self.batch_size, self.noise_dim))
-                #noise = np.random.uniform(-1., 1., (self.batch_size, self.noise_dim))
-                # Train the critic
-                d_loss = self.critic_model.train_on_batch([imgs, noise],
-                                                           [valid, fake, dummy])
-                #print(d_loss)
-                fl.write("%7d %13.7g %13.7g %13.7g %13.7g %13.7g %13.7g %13.7g %13.7g %13.7g\n"%(epoch,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss))
+                idx = np.random.randint(0, db_test.shape[0], self.batch_size)
+                imgs = db_test[idx]
+                d_loss_test = self.critic_model.test_on_batch([imgs, noise],
+                                                              [valid, fake, dummy])
+                g_loss = self.gen_model.train_on_batch(noise, valid)
+                #self.g_losses.append(g_loss)
+                #self.d_losses.append(d_loss)
+                #self.d_losses_test.append(d_loss_test)
 
-            # ---------------------
-            #  Train Generator
-            # ---------------------
+                # Plot the progress
+                print(f"Epoch: {epoch:5d}, Gen_Iter: {epoch*gen_iters + gen_iter:6d} [D loss: {d_loss[0]:7.2e}] [d_loss_test: {d_loss_test[0]:7.2e}] [G loss: {g_loss:7.2e}]")
+                fl.write("%7d %7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n"%(epoch,epoch*gen_iters+gen_iter,(epoch*gen_iters+gen_iter)*self.n_critic+jj,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss))
+                fl.close()
 
-            idx = np.random.randint(0, db_test.shape[0], self.batch_size)
-            imgs = db_test[idx]
-            d_loss_test = self.critic_model.test_on_batch([imgs, noise],
-                                                          [valid, fake, dummy])
-            g_loss = self.gen_model.train_on_batch(noise, valid)
-            #self.g_losses.append(g_loss)
-            #self.d_losses.append(d_loss)
-            #self.d_losses_test.append(d_loss_test)
-
-            # Plot the progress
-            print(f"{epoch} [D loss: {d_loss[0]:6.2g}] [d_loss_test: {d_loss_test[0]:6.2g}] [G loss: {g_loss:6.2g}]")
-            fl.write("%7d %13.7g %13.7g %13.7g %13.7g %13.7g %13.7g %13.7g %13.7g %13.7g\n"%(epoch,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss))
-
-            # If at save interval => save generated image samples
-            if epoch % 100 == 0:
-                self.plot_trajs(self.gen.predict(np.random.normal(0,1, size=(3,self.noise_dim))), epoch)
-                #self.plot_disc_predictions(fake_critic, real_critic, epoch, batch_size)
-            if epoch % 250 == 0:    
-                self.critic.save(self.dir_path+f'{epoch}_critic.h5')
-                self.gen.save(self.dir_path+f'{epoch}_gen.h5')
+                # If at save interval => save generated image samples
+                if (epoch*gen_iters + gen_iter) % 100 == 0:
+                    self.plot_trajs(self.gen.predict(np.random.normal(0,1, size=(3,self.noise_dim))), epoch*gen_iters + gen_iter)
+                if (epoch*gen_iters + gen_iter) % 250 == 0:    
+                    self.critic.save(self.dir_path+f'{epoch*gen_iters + gen_iter}_critic.h5')
+                    self.gen.save(self.dir_path+f'{epoch*gen_iters + gen_iter}_gen.h5')
 
 
-        fl.close()
-        self.critic.save(self.dir_path+f'{epochs-1}_critic.h5')
-        self.gen.save(self.dir_path+f'{epochs-1}_gen.h5')
+        self.critic.save(self.dir_path+f'{epoch*gen_iters + gen_iter-1}_critic.h5')
+        self.gen.save(self.dir_path+f'{epoch*gen_iters + gen_iter-1}_gen.h5')
         
 
             
 if __name__ == '__main__' :
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', type=int, default=1000)
-    parser.add_argument('--ncritic', type=int, default=30)
+    parser.add_argument('--epochs', type=int, default=300)
+    parser.add_argument('--ncritic', type=int, default=5)
     parser.add_argument('--load', type=int, default=[0], nargs=2)
     args = parser.parse_args()
     epochs = args.epochs
     load = args.load
     ncritic = args.ncritic
     
+    print("Importing Databases ... ",end="")
     db_train, db_test = load_data(0.8)
+    print("Done")
     
     noise_dim = 100
     
@@ -283,7 +288,7 @@ if __name__ == '__main__' :
             
             
             
-            
+    
     wgan = WGANGP(gen, critic, noise_dim, ncritic, 500, text)
-    print(f'train for {epochs} epochs')
+    print(f'Train for {epochs} epochs')
     wgan.train(epochs, db_train, db_test)

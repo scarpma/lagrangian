@@ -17,12 +17,6 @@ def build_generator(fs, fm, init_sigma, init_mean, alpha, noise_dim):
 
 
 
-    #from tensorflow.image import image_gradients
-    #from tensorflow.keras.layers import Input
-    #from tensorflow.keras.models import Model
-    #def derive():
-    #sig_input = Input(shape=(2000,1))
-    #x = sig_input
     #x = K.reshape(x, (-1,1,2000,1))
     #x = image_gradients(x)[1]
     #x = K.reshape(x, (-1,2000,1))
@@ -60,7 +54,9 @@ def build_generator(fs, fm, init_sigma, init_mean, alpha, noise_dim):
     x = Conv2DTranspose(1, fs, strides=(2,1), padding='same', kernel_initializer=RandomNormal(init_mean, init_sigma)) (x)
     x = Activation("tanh") (x)
 
-    x = Reshape((2000, 1)) (x)
+    # Eseguo derivata del segnale
+    x = Lambda(lambda x: image_gradients(x)[0]) (x)
+    x = Reshape((2000,1)) (x)
     
     generator = Model(sig_input,x)
     generator.summary()

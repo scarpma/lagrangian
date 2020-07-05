@@ -10,12 +10,13 @@ import tensorflow.keras
 import tensorflow.keras.losses
 from tensorflow.keras.optimizers import RMSprop, Adam
 from tensorflow.keras.initializers import RandomNormal
-from tensorflow.keras.layers import Dense, Conv1D, Conv2D, Conv2DTranspose, Flatten, Dropout, ReLU, Input, MaxPooling1D, Reshape, BatchNormalization, Activation
+from tensorflow.keras.layers import Dense, Conv1D, Conv2D, Conv2DTranspose, Flatten, Dropout, ReLU, Input, MaxPooling1D, Reshape, BatchNormalization, Activation, Lambda
 from tensorflow.keras.models import Sequential, Model
 import tensorflow.keras.backend as K
+
 from tensorflow.keras.models import load_model
 from functools import partial
-
+from tensorflow.image import image_gradients
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl

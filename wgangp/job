@@ -1,2 +1,3 @@
-python wgan.py --epochs 6000 --ncritic 20 >& log.txt &
-tail -f log.txt
+python wgan.py --epochs 200 --ncritic 30
+# >& log.txt &
+# tail -f log.txt
