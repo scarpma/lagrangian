@@ -15,18 +15,23 @@ def build_critic(fs, fm, init_sigma, init_mean, alpha):
     discriminator = Sequential()
     #2000x1
     discriminator.add(Conv1D(fm//16, fs, strides=2, padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma), input_shape=(2000, 1)))
+    #discriminator.add(ELU())
     discriminator.add(ReLU(negative_slope=alpha))
     #
     discriminator.add(Conv1D(fm//8, fs, strides=2, padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))    
+    #discriminator.add(ELU())
     discriminator.add(ReLU(negative_slope=alpha))
     #
     discriminator.add(Conv1D(fm//4, fs, strides=2, padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma))) 
+    #discriminator.add(ELU())
     discriminator.add(ReLU(negative_slope=alpha))
     #
     discriminator.add(Conv1D(fm//2, fs, strides=2, padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma))) 
+    #discriminator.add(ELU())
     discriminator.add(ReLU(negative_slope=alpha))
     #
     discriminator.add(Conv1D(fm, fs, strides=5, padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma))) 
+    #discriminator.add(ELU())
     discriminator.add(ReLU(negative_slope=alpha))
     #
     discriminator.add(Flatten())

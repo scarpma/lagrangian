@@ -23,23 +23,28 @@ def build_generator(fs, fm, init_sigma, init_mean, alpha, noise_dim):
     generator = Sequential()
     # Starting size
     generator.add(Dense(25*fm, kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma), input_dim=noise_dim))
+    #generator.add(ELU())
     generator.add(ReLU())
     #20x1
     generator.add(Reshape((25, 1, fm)))
     #5x4
     generator.add(BatchNormalization(momentum=0.8))
     generator.add(Conv2DTranspose(fm//2, fs, strides=(5,1), padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
+    #generator.add(ELU())
     generator.add(ReLU())
     #50x4
     generator.add(BatchNormalization(momentum=0.8))
     generator.add(Conv2DTranspose(fm//4, fs, strides=(2,1), padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
+    #generator.add(ELU())
     generator.add(ReLU())
     generator.add(BatchNormalization(momentum=0.8))
     generator.add(Conv2DTranspose(fm//8, fs, strides=(2,1), padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
+    #generator.add(ELU())
     generator.add(ReLU())
     #50x4
     generator.add(BatchNormalization(momentum=0.8))
     generator.add(Conv2DTranspose(fm//16, fs, strides=(2,1), padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
+    #generator.add(ELU())
     generator.add(ReLU())
     generator.add(BatchNormalization(momentum=0.8))
     generator.add(Conv2DTranspose(1, fs, strides=(2,1), padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
