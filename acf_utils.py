@@ -3,27 +3,35 @@
 
 import numpy as np
 
-def acf(x):
+#def acf(x):
+#    result = np.correlate(x, x, mode='full')
+#    #for i in range(len(result)):
+#    #    result[i] = result[i] / (len(result)-i) # normalizzazione in base al numero di punti sommati
+#    result = result / np.arange(len(result),1,-1)
+#    return  result[result.size // 2:] / result[result.size // 2]
+#
+#def acf_gen_x(db):
+#    acfs = np.ndarray(shape=db.shape)
+#    leng = db.shape[0]
+#    for i in range(leng):
+#        acfs[i,:,0] = acf(db[i,:,0])
+#        print(i,'/',leng,end='\r')
+#    return acfs
+
+def s_acf(x):
     result = np.correlate(x, x, mode='full')
-    for i in range(len(result)):
-        result[i] = result[i] / (len(result)-i) # normalizzazione in base al numero di punti sommati
-    return  result[result.size // 2:] / result[result.size // 2]
+    result = result / np.arange(result.shape[-1],0,-1)
+    result = result[result.size // 2:] / result[result.size // 2]
+    return result
 
-
-def acf_gen_mean_x(db):
-    acfs = acf(db[0,:,0])
-    for i in range(1,db.shape[0]):
-        acfs += acf(db[i,:,0])
-    
-    return acfs / (db.shape[0] + 1)
-
-def acf_gen_x(db):
-    acfs = np.ndarray(shape=db.shape)
-    leng = db.shape[0]
-    for i in range(leng):
-        acfs[i,:,0] = acf(db[i,:,0])
-        print(i,'/',leng,end='\r')
-    return acfs
+def acf_x(db,npart=None):
+    if npart==None:
+        dbn = db[:,:,0]
+    else:
+        idx = np.random.randint(0,db.shape[0],npart)
+        dbn = db[idx,:,0]
+    acfs = np.array([s_acf(traj) for traj in dbn])
+    return acfs.mean(axis=0)
 
 
 def exit_time(paths, soglia):

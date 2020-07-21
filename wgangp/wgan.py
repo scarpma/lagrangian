@@ -41,8 +41,12 @@ class WGANGP():
 
         # Following parameter and optimizer set as recommended in paper
         self.n_critic = n_critic
-        self.gen_lr = self.critic_lr = 0.00001
-        self.gen_b1 = self.critic_b1 = 0.5
+        #self.gen_lr = self.critic_lr = 0.00001
+        self.gen_lr = 0.0000025
+        self.critic_lr = 0.000005
+        #self.gen_lr = 0.00000001
+        #self.critic_lr = 0.000001
+        self.gen_b1 = self.critic_b1 = 0.0
         self.gen_b2 = self.critic_b2 = 0.9
         gen_optimizer = Adam(learning_rate=self.gen_lr, beta_1=self.gen_b1,beta_2=self.gen_b2)
         critic_optimizer = Adam(learning_rate=self.critic_lr, beta_1=self.critic_b1,beta_2=self.critic_b2)
@@ -219,7 +223,7 @@ class WGANGP():
             # print("gen trained")
 
             # Plot the progress
-            print(f"Gen_Iter: {gen_iter:6d} [D loss: {d_loss[0]:7.2e}] [d_loss_test: {d_loss_test[0]:7.2e}] [G loss: {g_loss:7.2e}]")
+            print(f"Gen_Iter: {gen_iter:6d} [D loss: {d_loss[0]:9.2e}] [d_loss_test: {d_loss_test[0]:9.2e}] [G loss: {g_loss:9.2e}]")
             fl.write("%7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n"%(gen_iter,gen_iter*self.n_critic+jj,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss))
             fl.close()
 
@@ -229,10 +233,14 @@ class WGANGP():
             if gen_iter % 250 == 0:    
                 self.critic.save(self.dir_path+f'{gen_iter}_critic.h5')
                 self.gen.save(self.dir_path+f'{gen_iter}_gen.h5')
+            if gen_iter % 2000 == 0:# and gen_iter > 0:    
+                mini_db = self.gen.predict(np.random.normal(0, 1, size=(50000, 100)))
+                np.save(f'runs/{run}/gen_trajs_{number}', mini_db)
+                del mini_db
 
 
-        self.critic.save(self.dir_path+f'{gen_iter-1}_critic.h5')
-        self.gen.save(self.dir_path+f'{gen_iter-1}_gen.h5')
+        self.critic.save(self.dir_path+f'{gen_iter+1}_critic.h5')
+        self.gen.save(self.dir_path+f'{gen_iter+1}_gen.h5')
         
 
             
@@ -291,6 +299,6 @@ if __name__ == '__main__' :
             
             
     
-    wgan = WGANGP(gen, critic, noise_dim, ncritic, 2000, text)
+    wgan = WGANGP(gen, critic, noise_dim, ncritic, 1000, text)
     print(f'Train for {gen_iters} generator iterations')
     wgan.train(gen_iters, db_train, db_test)
