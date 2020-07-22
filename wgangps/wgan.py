@@ -32,6 +32,8 @@ class WGANGP():
         self.noise_dim = noise_dim
         self.batch_size = batch_size
         self.text = text
+        #self.c2ij = np.load("../data/cij.npy")
+        self.c4ij = np.load("../data/c2ij.npy")
 
         # Creo cartella della run attuale:
         if not self.text == '0':
@@ -112,14 +114,36 @@ class WGANGP():
         img = self.gen(z_gen)
         # Discriminator determines validity
         valid = self.critic(img)
-        # Defines generator model
-        self.gen_model = Model(z_gen, valid)
-        self.gen_model.compile(loss=self.wasserstein_loss, optimizer=gen_optimizer)
 
+        # Defines generator model
+        self.gen_model = Model(inputs=[z_gen], outputs=[valid,img])
+        self.gen_model.compile(loss=[self.wasserstein_loss,self.K_invariance], loss_weights=[1,0.001], optimizer=gen_optimizer)
 
         
     def wasserstein_loss(self, y_true, y_pred):
         return K.mean(y_true * y_pred)
+
+
+    def K_invariance(self,y_true,y_pred):
+        def K_cov2(x):
+            x = K.squeeze(x, axis=-1)
+            x = x - K.expand_dims(K.mean(x, axis=0), 0)
+            N = K.cast(K.shape(x)[0], dtype="float32")
+            return K.dot(K.transpose(x), x) / N
+        def K_cov4(x):
+            x = K.squeeze(x, axis=-1)
+            x = x - K.expand_dims(K.mean(x, axis=0), 0)
+            x = K.square(x)
+            x = x - K.expand_dims(K.mean(x, axis=0), 0)
+            N = K.cast(K.shape(x)[0], dtype="float32")
+            return K.dot(K.transpose(x), x) / N
+        def K_norm(x):
+            return K.sqrt(K.sum(K.square(x)))
+        #c2r = K.constant(np.load("../data/cij.npy"),shape=(2000,2000))
+        c4r = K.constant(np.load("../data/c2ij.npy"),shape=(2000,2000))
+        #c2 = K_cov2(x)
+        c4 = K_cov4(y_pred)
+        return K_norm(c4r-c4) 
 
 
     def gradient_penalty_loss(self, y_true, y_pred, averaged_samples):
@@ -167,14 +191,14 @@ class WGANGP():
             f.write(f"TRAINING\nbatch={self.batch_size}\nncritic={self.n_critic}\ngen_iterations={gen_iters}\ngen_lr={self.gen_lr} gen_b1={self.gen_b1}  gen_b2={self.gen_b2}\ncritic_lr={self.critic_lr} critic_b1={self.critic_b1} critic_b2={self.critic_b2}\n")
             f.write(self.text)
         fl = open(self.dir_path+'training.dat','a+')
-        fl.write(f"# gen_iteration, critic_iteration, d_loss_tot, d_loss_true, d_loss_fake, d_loss_gp, d_loss_tot_test, d_loss_true_test, d_loss_fake_test, d_loss_gp_test, g_loss\n")
+        fl.write(f"# gen_iteration, critic_iteration, d_loss_tot, d_loss_true, d_loss_fake, d_loss_gp, d_loss_tot_test, d_loss_true_test, d_loss_fake_test, d_loss_gp_test, g_loss_tot, g_loss_std, g_loss_stat\n")
         fl.close()
 
         # ############## #
         
         static_noise = np.random.normal(0, 1, size=(1, self.noise_dim))
         d_loss_test = [0., 0., 0., 0.]
-        g_loss = 0.
+        g_loss = [0.,0.,0.]
         
         valid = -np.ones((self.batch_size, 1))
         fake =  np.ones((self.batch_size, 1))
@@ -207,7 +231,7 @@ class WGANGP():
                 d_loss = self.critic_model.train_on_batch([imgs, noise],
                                                            [valid, fake, dummy])
                 # print("disc trained")
-                if (jj!=self.n_critic-1): fl.write("%7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n"%(gen_iter,gen_iter*self.n_critic+jj,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss))
+                if (jj!=self.n_critic-1): fl.write("%7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n"%(gen_iter,gen_iter*self.n_critic+jj,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss[0],g_loss[1],g_loss[2]))
 
 
             # ---------------------
@@ -219,12 +243,12 @@ class WGANGP():
             #d_loss_test = self.critic_model.test_on_batch([imgs, noise],
             #                                              [valid, fake, dummy])
             # print("init gen train") 
-            g_loss = self.gen_model.train_on_batch(noise, valid)
+            g_loss = self.gen_model.train_on_batch(noise, [valid, fake])
             # print("gen trained")
 
             # Plot the progress
-            print(f"Gen_Iter: {gen_iter:6d} [D loss: {d_loss[0]:9.2e}] [d_loss_test: {d_loss_test[0]:9.2e}] [G loss: {g_loss:9.2e}]")
-            fl.write("%7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n"%(gen_iter,gen_iter*self.n_critic+jj,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss))
+            print(f"Gen_Iter: {gen_iter:6d} [D loss: {d_loss[0]:9.2e}] [G loss: {g_loss[0]:9.2e} {g_loss[1]:9.2e} {g_loss[2]:9.2e}]")
+            fl.write("%7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n"%(gen_iter,gen_iter*self.n_critic+jj,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss[0],g_loss[1],g_loss[2]))
             fl.close()
 
             # If at save interval => save generated image samples
@@ -233,8 +257,8 @@ class WGANGP():
             if gen_iter % 250 == 0:    
                 self.critic.save(self.dir_path+f'{gen_iter}_critic.h5')
                 self.gen.save(self.dir_path+f'{gen_iter}_gen.h5')
-            if gen_iter % 2000 == 0:# and gen_iter > 0:    
-                mini_db = self.gen.predict(np.random.normal(0, 1, size=(50000, self.noise_dim)))
+            if gen_iter % 2000 == 0 and gen_iter > 0:    
+                mini_db = self.gen.predict(np.random.normal(0, 1, size=(50000, 100)))
                 np.save(self.dir_path+f'gen_trajs_{gen_iter}', mini_db)
                 del mini_db
 
@@ -259,7 +283,7 @@ if __name__ == '__main__' :
     db_train, db_test = load_data(0.8)
     print("Done")
     
-    noise_dim = 50
+    noise_dim = 100
     
     if load[0] > 0:
         run = load[0]
