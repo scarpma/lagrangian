@@ -1,26 +1,31 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-run=0
-number=1750
-npart=30000
+run=74
+number=2000
+npart=None
 media=0
 
 import numpy as np
 
 print("Database import")
 if run==0:
+    #path_v = f'../databases/gaussian_process.npy'
     path_v = f'../databases/velocities.npy'
 elif media==0:
-    path_v = f'wgangp/runs/{run}/gen_trajs_{number}.npy'
+    path_v = f'wgangps/runs/{run}/gen_trajs_{number}.npy'
+    #path_v = f'wgangp/runs/{run}/gen_trajs_{number}.npy'
 else:
     path_v = f'wgangp/runs/{run}/gen_trajs_{number}_media.npy'
 
 print("Loading ... ", path_v)
 db = np.load(path_v)
+if db.shape[-1]!=1: 
+    db = db.reshape((db.shape[0],db.shape[1],1))
+    print("Database reshaped")
 if npart == None:
     npart = db.shape[0]
-    print("Taking entire dataset") 
+    print(f"Taking entire dataset, {npart} samples") 
 else: 
     idx = np.random.randint(0,db.shape[0],npart)
     db = db[idx]
@@ -43,8 +48,11 @@ def compute_struct_func(db,npart,taus):
 
 
 s = compute_struct_func(db,npart,taus)
-if run==0: np.save(f"data/struct_function_{npart}_part",s)
-elif media == 0: np.save(f"data/struct_function_{npart}_part_gen_{run}_{number}",s)
+if run==0: 
+    #np.save(f"data/gaussian_struct_function_{npart}_part",s)
+    np.save(f"data/struct_function_{npart}_part",s)
+elif media == 0: np.save(f"data/struct_function_{npart}_part_gen_s_{run}_{number}",s)
+#elif media == 0: np.save(f"data/struct_function_{npart}_part_gen_{run}_{number}",s)
 else: np.save(f"data/struct_function_{npart}_part_gen_{run}_{number}_media",s)
 
 print("Done!")

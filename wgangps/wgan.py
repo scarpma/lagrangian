@@ -4,7 +4,7 @@
 from db_utils import *
 from gen import *
 from critic import *
-
+from tensorflow.python.ops import math_ops
 
 class RandomWeightedAverage(tensorflow.keras.layers.Layer):
     def __init__(self, batch_size):
@@ -17,7 +17,6 @@ class RandomWeightedAverage(tensorflow.keras.layers.Layer):
 
     def compute_output_shape(self, input_shape):
         return input_shape[0]
-
 
 
 class WGANGP():
@@ -33,7 +32,7 @@ class WGANGP():
         self.batch_size = batch_size
         self.text = text
         #self.c2ij = np.load("../data/cij.npy")
-        self.c4ij = np.load("../data/c2ij.npy")
+        #self.c4ij = np.load("../data/c2ij.npy")
 
         # Creo cartella della run attuale:
         if not self.text == '0':
@@ -44,8 +43,8 @@ class WGANGP():
         # Following parameter and optimizer set as recommended in paper
         self.n_critic = n_critic
         #self.gen_lr = self.critic_lr = 0.00001
-        self.gen_lr = 0.00005
-        self.critic_lr = 0.0001
+        self.gen_lr = 0.0000025
+        self.critic_lr = 0.000005
         #self.gen_lr = 0.00000001
         #self.critic_lr = 0.000001
         self.gen_b1 = self.critic_b1 = 0.0
@@ -117,14 +116,16 @@ class WGANGP():
 
         # Defines generator model
         self.gen_model = Model(inputs=[z_gen], outputs=[valid,img])
-        self.gen_model.compile(loss=[self.wasserstein_loss,self.K_invariance], loss_weights=[1,0.001], optimizer=gen_optimizer)
+        self.gen_model.compile(loss=[self.wasserstein_loss,self.K_invariance], optimizer=gen_optimizer)#loss_weights=[1.,1.],)
 
         
     def wasserstein_loss(self, y_true, y_pred):
-        return K.mean(y_true * y_pred)
+        out = K.mean(y_true * y_pred)
+        #out = K.print_tensor(out, message= 'I am Wasserstein')
+        return out
 
 
-    def K_invariance(self,y_true,y_pred):
+    def K_invariance_old(self,y_true,y_pred):
         def K_cov2(x):
             x = K.squeeze(x, axis=-1)
             x = x - K.expand_dims(K.mean(x, axis=0), 0)
@@ -136,6 +137,7 @@ class WGANGP():
             x = K.square(x)
             x = x - K.expand_dims(K.mean(x, axis=0), 0)
             N = K.cast(K.shape(x)[0], dtype="float32")
+            #x = tensorflow.Print()
             return K.dot(K.transpose(x), x) / N
         def K_norm(x):
             return K.sqrt(K.sum(K.square(x)))
@@ -143,7 +145,33 @@ class WGANGP():
         c4r = K.constant(np.load("../data/c2ij.npy"),shape=(2000,2000))
         #c2 = K_cov2(x)
         c4 = K_cov4(y_pred)
+        print("ciao ############################################")
         return K_norm(c4r-c4) 
+
+
+    def K_invariance(self,y_true,y_pred):
+        def K_cov4(x):
+            x = K.squeeze(x, axis=-1)
+            x = x - K.expand_dims(K.mean(x, axis=0), 0)
+            x = K.square(x)
+            x = x - K.expand_dims(K.mean(x, axis=0), 0)
+            N = K.cast(K.shape(x)[0], dtype="float32")
+            #N = K.print_tensor(N, message= 'I am here')
+            return math_ops.scalar_mul(1./N, K.dot(K.transpose(x), x))
+
+        def K_norm(x):
+            return K.sqrt(K.sum(K.square(x)))
+
+        c4p = K_cov4(y_pred)
+        c4t = K_cov4(y_true)
+
+        out = math_ops.squared_difference(c4t, c4p)
+        #out = math_ops.square(c4t)
+        out = K.sqrt(math_ops.reduce_sum(out))
+        #out = K.print_tensor(out, message= 'I am here 2')
+
+        return out
+
 
 
     def gradient_penalty_loss(self, y_true, y_pred, averaged_samples):
@@ -237,17 +265,21 @@ class WGANGP():
             # ---------------------
             #  Train Generator
             # ---------------------
-
-            idx = np.random.randint(0, db_test.shape[0], self.batch_size)
-            imgs = db_test[idx]
+            
+            ### BISOGNA GENERARE UN RUMORE NUOVO ????????????????????????????????????????????????????????????
+            #idx = np.random.randint(0, db_test.shape[0], self.batch_size)
+            #imgs = db_test[idx]
             #d_loss_test = self.critic_model.test_on_batch([imgs, noise],
             #                                              [valid, fake, dummy])
             # print("init gen train") 
-            g_loss = self.gen_model.train_on_batch(noise, [valid, fake])
+            g_loss = self.gen_model.train_on_batch(noise, [valid, imgs])
             # print("gen trained")
 
             # Plot the progress
-            print(f"Gen_Iter: {gen_iter:6d} [D loss: {d_loss[0]:9.2e}] [G loss: {g_loss[0]:9.2e} {g_loss[1]:9.2e} {g_loss[2]:9.2e}]")
+            print(f"Gen_Iter: {gen_iter:6d} [D loss: {d_loss[1]:9.2e} {d_loss[2]:9.2e} {d_loss[3]:9.2e} {d_loss[0]:9.2e} {d_loss[1]+d_loss[2]+10*d_loss[3]:9.2e}]")
+            print(f"Gen_Iter: {gen_iter:6d} [G loss: {g_loss[1]:9.2e} {g_loss[2]:9.2e} {g_loss[0]:9.2e} {g_loss[1]+g_loss[2]:9.2e}]")
+
+
             fl.write("%7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n"%(gen_iter,gen_iter*self.n_critic+jj,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss[0],g_loss[1],g_loss[2]))
             fl.close()
 
@@ -323,6 +355,6 @@ if __name__ == '__main__' :
             
             
     
-    wgan = WGANGP(gen, critic, noise_dim, ncritic, 500, text)
+    wgan = WGANGP(gen, critic, noise_dim, ncritic, 1000, text)
     print(f'Train for {gen_iters} generator iterations')
     wgan.train(gen_iters, db_train, db_test)
