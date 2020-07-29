@@ -26,11 +26,9 @@ def load_pdf(name):
 def create_log_bins(xmin,xmax,nbin,eps):
     import numpy as np
     if xmin*xmax<0.:
-        n1 = int(nbin*abs(xmin)/(xmax-xmin))
-        n2 = int(nbin*xmax/(xmax-xmin))
-        bins1 = np.logspace(np.log10(eps),np.log10(abs(xmin)), n1)
-        bins2 = np.logspace(np.log10(eps),np.log10(xmax), n2)
-        bins = np.concatenate((-bins1[::-1],bins2))
+        estremo = np.max([xmax,-xmin])
+        bins1 = np.logspace(np.log10(eps),np.log10(estremo), nbin//2)
+        bins = np.r_[-bins1[::-1],[0.],bins1]
         return bins
     elif xmax>0. and xmin>0.:
         bins = np.logspace(np.log10(xmin),np.log10(xmax), nbin)

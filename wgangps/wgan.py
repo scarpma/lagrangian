@@ -116,7 +116,7 @@ class WGANGP():
 
         # Defines generator model
         self.gen_model = Model(inputs=[z_gen], outputs=[valid,img])
-        self.gen_model.compile(loss=[self.wasserstein_loss,self.K_invariance], optimizer=gen_optimizer)#loss_weights=[1.,1.],)
+        self.gen_model.compile(loss=[self.wasserstein_loss,self.K2_invariance], optimizer=gen_optimizer)#loss_weights=[1.,1.],)
 
         
     def wasserstein_loss(self, y_true, y_pred):
@@ -125,31 +125,27 @@ class WGANGP():
         return out
 
 
-    def K_invariance_old(self,y_true,y_pred):
+    def K2_invariance(self,y_true,y_pred):
         def K_cov2(x):
             x = K.squeeze(x, axis=-1)
             x = x - K.expand_dims(K.mean(x, axis=0), 0)
             N = K.cast(K.shape(x)[0], dtype="float32")
-            return K.dot(K.transpose(x), x) / N
-        def K_cov4(x):
-            x = K.squeeze(x, axis=-1)
-            x = x - K.expand_dims(K.mean(x, axis=0), 0)
-            x = K.square(x)
-            x = x - K.expand_dims(K.mean(x, axis=0), 0)
-            N = K.cast(K.shape(x)[0], dtype="float32")
-            #x = tensorflow.Print()
-            return K.dot(K.transpose(x), x) / N
+            #N = K.print_tensor(N, message= 'I am here')
+            return math_ops.scalar_mul(1./N, K.dot(K.transpose(x), x))
+
         def K_norm(x):
             return K.sqrt(K.sum(K.square(x)))
-        #c2r = K.constant(np.load("../data/cij.npy"),shape=(2000,2000))
-        c4r = K.constant(np.load("../data/c2ij.npy"),shape=(2000,2000))
-        #c2 = K_cov2(x)
-        c4 = K_cov4(y_pred)
-        print("ciao ############################################")
-        return K_norm(c4r-c4) 
+
+        c2p = K_cov2(y_pred)
+        c2t = K_cov2(y_true)
+
+        out = math_ops.squared_difference(c2t, c2p)
+        out = K.sqrt(math_ops.reduce_sum(out))
+        #out = K.print_tensor(out, message= 'I am here 2')
+        return out
 
 
-    def K_invariance(self,y_true,y_pred):
+    def K4_invariance(self,y_true,y_pred):
         def K_cov4(x):
             x = K.squeeze(x, axis=-1)
             x = x - K.expand_dims(K.mean(x, axis=0), 0)
@@ -166,10 +162,8 @@ class WGANGP():
         c4t = K_cov4(y_true)
 
         out = math_ops.squared_difference(c4t, c4p)
-        #out = math_ops.square(c4t)
         out = K.sqrt(math_ops.reduce_sum(out))
         #out = K.print_tensor(out, message= 'I am here 2')
-
         return out
 
 
