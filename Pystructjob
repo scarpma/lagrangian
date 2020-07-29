@@ -1,2 +1,0 @@
-python Pystruct.py >& log-Pystruct.txt &
-tail -f log-Pystruct.txt
