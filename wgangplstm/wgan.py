@@ -46,8 +46,8 @@ class WGANGP():
         self.critic_lr = 0.0001
         #self.gen_lr = 0.00000001
         #self.critic_lr = 0.000001
-        self.gen_b1 = self.critic_b1 = 0.9 # di solito è 0.0
-        self.gen_b2 = self.critic_b2 = 0.999 # di solito è 0.9
+        self.gen_b1 = self.critic_b1 = 0.0
+        self.gen_b2 = self.critic_b2 = 0.9
         gen_optimizer = Adam(learning_rate=self.gen_lr, beta_1=self.gen_b1,beta_2=self.gen_b2)
         critic_optimizer = Adam(learning_rate=self.critic_lr, beta_1=self.critic_b1,beta_2=self.critic_b2)
         
@@ -68,7 +68,7 @@ class WGANGP():
         real_img = Input(shape=(self.sig_len,self.channels))
 
         # Noise input
-        z_disc = Input(shape=(self.noise_dim,))
+        z_disc = Input(shape=(self.noise_dim,1))
         # Generate image based of noise (fake sample)
         fake_img = self.gen(z_disc)
 
@@ -107,7 +107,7 @@ class WGANGP():
         self.gen.trainable = True
 
         # Sampled noise for input to generator
-        z_gen = Input(shape=(self.noise_dim,))
+        z_gen = Input(shape=(self.noise_dim,1))
         # Generate images based of noise
         img = self.gen(z_gen)
         # Discriminator determines validity
@@ -150,7 +150,7 @@ class WGANGP():
         else: return 1
 
  
-    def plot_trajs(self, gen_trajs,epoch):
+    def plot_trajs(self, gen_trajs, epoch):
         plt.figure(figsize=(15, 2*len(gen_trajs)))
         for i, traj in enumerate(gen_trajs):
             plt.subplot(len(gen_trajs), 1, i+1)
@@ -172,7 +172,7 @@ class WGANGP():
 
         # ############## #
         
-        static_noise = np.random.normal(0, 1, size=(1, self.noise_dim))
+        static_noise = np.random.normal(0, 1, size=(1, self.noise_dim, 1))
         d_loss_test = [0., 0., 0., 0.]
         g_loss = 0.
         
@@ -200,7 +200,7 @@ class WGANGP():
                 # idx = np.arange(batch_start, batch_end)
                 imgs = db_train[idx]
                 # Sample generator input
-                noise = np.random.normal(0, 1, (self.batch_size, self.noise_dim))
+                noise = np.random.normal(0, 1, (self.batch_size, self.noise_dim,1))
                 #noise = np.random.uniform(-1., 1., (self.batch_size, self.noise_dim))
                 # Train the critic
                 # print("init disc train") 
@@ -229,21 +229,21 @@ class WGANGP():
 
             # If at save interval => save generated image samples
             if gen_iter % 100 == 0:
-                self.plot_trajs(self.gen.predict(np.random.normal(0,1, size=(3,self.noise_dim))), gen_iter)
-            if gen_iter % 250 == 0:    
+                self.plot_trajs(self.gen.predict(np.random.normal(0,1, size=(3,self.noise_dim,1))), gen_iter)
+            if gen_iter % 250 == 0:
                 self.critic.save(self.dir_path+f'{gen_iter}_critic.h5')
                 self.gen.save(self.dir_path+f'{gen_iter}_gen.h5')
-            if gen_iter % 2000 == 0:# and gen_iter > 0:    
-                mini_db = self.gen.predict(np.random.normal(0, 1, size=(50000, self.noise_dim)))
-                np.save(self.dir_path+f'gen_trajs_{gen_iter}', mini_db)
-                del mini_db
+            #if gen_iter % 2000 == 0 and gen_iter > 0:
+            #    mini_db = self.gen.predict(np.random.normal(0, 1, size=(50000, self.noise_dim,1)))
+            #    np.save(self.dir_path+f'gen_trajs_{gen_iter}', mini_db)
+            #    del mini_db
 
 
         self.critic.save(self.dir_path+f'{gen_iter+1}_critic.h5')
         self.gen.save(self.dir_path+f'{gen_iter+1}_gen.h5')
-        
 
-            
+
+ 
 if __name__ == '__main__' :
     
     parser = argparse.ArgumentParser()
@@ -259,7 +259,7 @@ if __name__ == '__main__' :
     db_train, db_test = load_data(0.8)
     print("Done")
     
-    noise_dim = 100
+    noise_dim = 25
     
     if load[0] > 0:
         run = load[0]
@@ -278,14 +278,13 @@ if __name__ == '__main__' :
         # scrivo stringa info log gen #
         text = f"continuo run {run} from number {number}"
     else:
-        fs=(100,1)
-        fm=128
-        init_sigma = 0.003
+        cells = 128
+        fs = 100
+        init_sigma = 0.03
         init_mean = 0.0
-        alpha = 0.2
         # scrivo stringa info log gen #
-        text = f"GEN\n{fs,fm,init_sigma,init_mean,noise_dim,alpha}\n"
-        gen = build_generator(fs,fm,init_sigma,init_mean,alpha,noise_dim)
+        text = f"GEN\n{cells,init_sigma,init_mean,noise_dim}\n"
+        gen = build_generator(cells,fs,init_sigma,init_mean,noise_dim)
         fs = 100
         fm = 128
         init_sigma = 0.02
