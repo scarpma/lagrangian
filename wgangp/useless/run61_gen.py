@@ -13,8 +13,10 @@ def build_generator(fs, fm, init_sigma, init_mean, alpha, noise_dim):
     """
 
 
-
-
+    filtersize = fs[0]
+    fs2 = (filtersize//2,1)
+    fs3 = (filtersize//4,1)
+    fs4 = (filtersize//8,1)
 
 
 
@@ -38,16 +40,22 @@ def build_generator(fs, fm, init_sigma, init_mean, alpha, noise_dim):
     #generator.add(ELU())
     generator.add(ReLU())
     generator.add(BatchNormalization(momentum=0.8))
-    generator.add(Conv2DTranspose(fm//8, fs, strides=(2,1), padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
+    generator.add(Conv2DTranspose(fm//8, fs2, strides=(2,1), padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
     #generator.add(ELU())
     generator.add(ReLU())
     #50x4
     generator.add(BatchNormalization(momentum=0.8))
-    generator.add(Conv2DTranspose(fm//16, fs, strides=(2,1), padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
+    generator.add(Conv2DTranspose(fm//16, fs2, strides=(2,1), padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
     #generator.add(ELU())
     generator.add(ReLU())
     generator.add(BatchNormalization(momentum=0.8))
-    generator.add(Conv2DTranspose(1, fs, strides=(2,1), padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
+    generator.add(Conv2DTranspose(fm//32, fs3, strides=(2,1), padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
+    generator.add(ReLU())
+    generator.add(BatchNormalization(momentum=0.8))
+    generator.add(Conv2DTranspose(fm//64, fs3, padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
+    generator.add(ReLU())
+    generator.add(BatchNormalization(momentum=0.8))
+    generator.add(Conv2DTranspose(1, fs4, padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))
     generator.add(Activation("tanh"))
     
     # convolutional layer with a single filter that could perform the denoise of the signal.

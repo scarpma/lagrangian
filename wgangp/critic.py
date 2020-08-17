@@ -47,7 +47,7 @@ def build_critic(fs, fm, init_sigma, init_mean, alpha):
 
 
 if __name__ == '__main__':
-    fs = 20
+    fs = 100
     fm = 128
     init_sigma = 0.02
     init_mean = 0.01

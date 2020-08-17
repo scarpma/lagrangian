@@ -46,8 +46,8 @@ class WGANGP():
         self.critic_lr = 0.0001
         #self.gen_lr = 0.00000001
         #self.critic_lr = 0.000001
-        self.gen_b1 = self.critic_b1 = 0.9 # di solito è 0.0
-        self.gen_b2 = self.critic_b2 = 0.999 # di solito è 0.9
+        self.gen_b1 = self.critic_b1 = 0.0 # di solito è 0.0
+        self.gen_b2 = self.critic_b2 = 0.9 # di solito è 0.9
         gen_optimizer = Adam(learning_rate=self.gen_lr, beta_1=self.gen_b1,beta_2=self.gen_b2)
         critic_optimizer = Adam(learning_rate=self.critic_lr, beta_1=self.critic_b1,beta_2=self.critic_b2)
         

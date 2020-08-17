@@ -41,11 +41,11 @@ def compute_structure_function(db,npart=None):
 
 if __name__ == '__main__' :
     
-    run=9
-    number=1750
+    run=65
+    number=8000
     npart=None
     media=0
-    gan_type = 'wgangplstm'
+    gan_type = 'wgangp'
     
     
     import numpy as np

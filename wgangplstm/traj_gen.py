@@ -1,7 +1,7 @@
 from db_utils import *
 
-run = 9
-number = 1750
+run = 10
+number = 5000
 
 path = f'/scratch/scarpolini/lagrangian/wgangplstm/runs/{run}/{number}_gen.h5'
 print('Loading Model ...')
@@ -14,7 +14,7 @@ trajs = np.zeros(shape=(N*bs,2000,1))
 print('Generating Trajectories ...')
 for ii in range(N):
     print(ii)
-    noise = np.random.normal(0, 1, size=(bs, 2000, 1))
+    noise = np.random.normal(0, 1, size=(bs, 25, 1))
     trajs[ii*bs:(ii+1)*bs,:,0:1] = gen.predict(noise, verbose=1, batch_size=bs)
 
 

@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import numpy as np
+import ou
 
 #def acf(x):
 #    result = np.correlate(x, x, mode='full')
@@ -32,6 +33,62 @@ def acf_x(db,npart=None):
         dbn = db[idx,:,0]
     acfs = np.array([s_acf(traj) for traj in dbn])
     return acfs.mean(axis=0)
+
+def compute_acf(db,npart=None):
+    from time import time
+    
+    if npart == None:
+        nun_part = db.shape[0]
+        dbn = np.asfortranarray(db.squeeze().astype('float64').T)
+        print(f"Taken whole dataset, {num_part} trajectories")
+    else:
+        num_part = npart
+        idx = np.random.randint(0,db.shape[0],num_part)
+        dbn = np.asfortranarray(db[idx].squeeze().astype('float64').T)
+        print(f"Taken partial dataset, {num_part} trajectories")
+
+    acf = np.asfortranarray(np.zeros(shape=(db.shape[1])))
+    start = time()
+    ou.cor_func(dbn,acf)
+    dbn = np.ascontiguousarray(dbn).T
+    print(time()-start)
+
+    return dbn
+
+def correlate(x):    
+    acf = np.zeros(x.size)
+    ou.correlate(x,acf)
+    return acf
+
+
+def compute_et(db,npart=None):
+    from time import time
+    
+    soglia = 0.5
+    if npart == None:
+        nun_part = db.shape[0]
+        dbn = db.squeeze()
+        print(f"Taken whole dataset, {num_part} trajectories")
+    else:
+        num_part = npart
+        idx = np.random.randint(0,db.shape[0],num_part)
+        dbn = db[idx].squeeze()
+        print(f"Taken partial dataset, {num_part} trajectories")
+
+    et = np.zeros(num_part)
+    start = time()
+    
+    for kk, traj in enumerate(dbn):
+        acf = correlate(traj)
+        for t in range(len(acf)):
+            if acf[t] < soglia :
+                et[kk] = (1.)/(acf[t]-acf[t-1])*(0.5-acf[t-1]) + t - 1.
+                break
+    
+    
+    print(time()-start)
+   
+    return et
 
 
 def exit_time(paths, soglia):
