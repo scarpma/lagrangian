@@ -38,7 +38,7 @@ def compute_acf(db,npart=None):
     from time import time
     
     if npart == None:
-        nun_part = db.shape[0]
+        num_part = db.shape[0]
         dbn = np.asfortranarray(db.squeeze().astype('float64').T)
         print(f"Taken whole dataset, {num_part} trajectories")
     else:
