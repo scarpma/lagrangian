@@ -5,7 +5,7 @@ def compute_structure_function(db,npart=None):
     import ou
     import numpy as np
     struct = np.zeros(shape=(34,4),order='f')
-    if db.shape[-1] == 2000:
+    if len(db.shape)==2:
         print("Database shape ok, continuing...")
         if npart != None:
             print(f"Database larger than npart. Taken {npart} samples randomly.")
@@ -15,7 +15,7 @@ def compute_structure_function(db,npart=None):
             ou.compute_struct(struct,dbn)
             return np.ascontiguousarray(struct)
         elif npart == None:
-            print(f"Taking entire dataset, {npart} samples") 
+            print(f"Taking entire dataset, {npart} samples")
             print("Converting database to fortran order")
             dbn = np.asfortranarray(db.T)
             ou.compute_struct(struct,dbn)
@@ -30,9 +30,10 @@ def compute_structure_function(db,npart=None):
             ou.compute_struct(struct,dbn)
             return np.ascontiguousarray(struct)
         elif npart == None:
-            print(f"Taking entire dataset, {npart} samples") 
+            print(f"Taking entire dataset, {npart} samples")
             print("Converting database to fortran order")
             dbn = np.asfortranarray(db[:,:,0].T)
+            print(dbn.shape)
             ou.compute_struct(struct,dbn)
             return np.ascontiguousarray(struct)
 
@@ -40,68 +41,62 @@ def compute_structure_function(db,npart=None):
 
 
 if __name__ == '__main__' :
-    
-    run=65
-    number=8000
-    npart=None
-    media=0
-    gan_type = 'wgangp'
-    
-    
+
+
+    import sys
+    import os
+    import os.path
     import numpy as np
-    
 
+    # ARGUMENTS AND OPTIONS PARSING
 
-    """
-    DATABASE IMPORT
-    """
+    option_npart = False
+    option_npart_arg = 0
 
-    print("Database import: ", end="")
-    if run==0:
-        #path_v = f'../databases/gaussian_process.npy'
-        path_v = f'../databases/velocities.npy'
-        print(path_v)
-    elif media==0:
-        #path_v = f'wgangps/runs/{run}/gen_trajs_{number}.npy'
-        path_v = "../databases/lagrangian/"+gan_type+f'/runs/{run}/gen_trajs_{number}.npy'
-        print(path_v)
-    else:
-        #path_v = f'wgangps/runs/{run}/gen_trajs_{number}_media.npy'
-        path_v = "../databases/lagrangian/"+gan_type+f'/runs/{run}/gen_trajs_{number}_media.npy'
-        print(path_v)
-    
-    
-    db = np.load(path_v)
-    if npart == None:
-        npart_save = db.shape[0]
-    else :
-        npart_save = npart
-    
-    """
-    SAVING
-    """
+    if len(sys.argv)<3:
+        print("usage: compute_struct.py read_path write_path [-npart <number>]")
+        exit()
 
-    if run==0: 
-        save_path = f"data/real/struct_function_{npart_save}_part"
-        print("save_path = ",save_path)
-    #elif media == 0: 
-    #    save_path = f"data/wgangps/struct_function_{npart_save}_part_gen_{run}_{number}"
-    #    print("save_path = ",save_path)
-    elif media == 0: 
-        save_path = f"data/"+gan_type+f"/struct_function_{npart_save}_part_gen_{run}_{number}"
-        print("save_path = ",save_path)
-    #else: 
-    #    save_path = f"data/"+gan_type+f"/struct_function_{npart_save}_part_gen_{run}_{number}_media"
-    #    print("save_path = ",save_path)
-    else: 
-        save_path = f"data/"+gan_type+f"/struct_function_{npart_save}_part_gen_{run}_{number}_media"
-        print("save_path = ",save_path)
-    
-    
+    read_path = sys.argv[1]
+    write_path = sys.argv[2]
+    sys.argv.pop(1)
+    sys.argv.pop(1)
+
+    print("path read: ", read_path)
+    if not os.path.isfile(read_path):
+        print("Invalid read_path: file does not exist. Exiting.")
+        exit()
+    print("path write: ", write_path)
+    if os.path.isfile(write_path):
+        print("Write path already exists. Exiting.")
+        exit()
+    if not os.path.isdir(os.path.split(write_path)[0]):
+        print("Invalid write_path: dir does not exist. Exiting.")
+        exit()
+
+    i = 1
+    while i < len(sys.argv):
+        if sys.argv[i] == "-npart":
+            option_npart = True
+            sys.argv.pop(i)
+            option_npart_arg = int(sys.argv.pop(i))
+        elif sys.argv[i] == "-p":
+            print("Unknown argument, continuing ...")
+        else:
+            i += 1
 
 
 
-    s = compute_structure_function(db,npart)
+
+    # DATABASE IMPORT
+
+    db = np.load(read_path)
+    if not option_npart:
+        option_npart_arg = db.shape[0]
+
+
+
+    s = compute_structure_function(db,option_npart_arg)
     print("Saving ...")
-    np.save(save_path,s)
+    np.save(write_path,s)
     print("Done!")

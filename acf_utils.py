@@ -61,6 +61,21 @@ def correlate(x):
     return acf
 
 
+def histogram(array,nbins):
+    import ou
+    hist = np.zeros(nbins,dtype=np.int32, order='F')
+    bins = np.zeros(nbins,dtype=np.float64, order='F')
+    dbn = np.asfortranarray(arrayflatten().astype('float64'))
+    ou.histogram(dbn, hist, bins)
+    hist = np.ascontiguousarray(hist)
+    bins = np.ascontiguousarray(bins)
+    hist = hist.astype('float')
+    # normalization
+    binw = bins[1]-bins[0]
+    tot_range = binw * len(bins)
+    hist2 = hist / (np.sum(hist)*tot_range)
+    return hist, bins
+
 def compute_et(db,npart=None):
     from time import time
     
