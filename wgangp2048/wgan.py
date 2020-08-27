@@ -21,7 +21,7 @@ class RandomWeightedAverage(tensorflow.keras.layers.Layer):
 
 
 class WGANGP():
-    def __init__(self,gen,critic,noise_dim,n_critic,batch_size,text):
+    def __init__(self,gen,critic,noise_dim,n_critic,batch_size,gen_lr,critic_lr,text):
         #self.d_losses = []
         #self.d_losses_test = []
         #self.g_losses = []
@@ -37,20 +37,21 @@ class WGANGP():
         if not self.text == '0':
             self.current_run = self.get_run()
             self.dir_path = f"runs/{self.current_run}/"
+            print(f"\nCreating new directories for run: {self.current_run}\n")
             os.mkdir(self.dir_path)
 
         # Following parameter and optimizer set as recommended in paper
         self.n_critic = n_critic
         #self.gen_lr = self.critic_lr = 0.00001
-        self.gen_lr = 0.00005
-        self.critic_lr = 0.0001
-        #self.gen_lr = 0.00000001
-        #self.critic_lr = 0.000001
+        self.gen_lr = gen_lr
+        self.critic_lr = critic_lr
         self.gen_b1 = self.critic_b1 = 0.0 # di solito è 0.0
         self.gen_b2 = self.critic_b2 = 0.9 # di solito è 0.9
-        gen_optimizer = Adam(learning_rate=self.gen_lr, beta_1=self.gen_b1,beta_2=self.gen_b2)
-        critic_optimizer = Adam(learning_rate=self.critic_lr, beta_1=self.critic_b1,beta_2=self.critic_b2)
-        
+        gen_optimizer = Adam(learning_rate=self.gen_lr,
+                             beta_1=self.gen_b1,beta_2=self.gen_b2)
+        critic_optimizer = Adam(learning_rate=self.critic_lr,
+                                beta_1=self.critic_b1,beta_2=self.critic_b2)
+
 
         self.critic = critic
         self.gen = gen
@@ -77,7 +78,8 @@ class WGANGP():
         valid = self.critic(real_img)
 
         # Construct weighted average between real and fake images
-        interpolated_img = RandomWeightedAverage(self.batch_size)([real_img, fake_img])
+        interpolated_img = RandomWeightedAverage(
+                self.batch_size)([real_img, fake_img])
         # Determine validity of weighted sample
         validity_interpolated = self.critic(interpolated_img)
 
@@ -117,14 +119,15 @@ class WGANGP():
         self.gen_model.compile(loss=self.wasserstein_loss, optimizer=gen_optimizer)
 
 
-        
+
     def wasserstein_loss(self, y_true, y_pred):
         return K.mean(y_true * y_pred)
 
 
     def gradient_penalty_loss(self, y_true, y_pred, averaged_samples):
         """
-        Computes gradient penalty based on prediction and weighted real / fake samples
+        Computes gradient penalty based on
+        prediction and weighted real / fake samples
         """
         gradients = K.gradients(y_pred, averaged_samples)[0]
         # compute the euclidean norm by squaring ...
@@ -139,17 +142,17 @@ class WGANGP():
         # return the mean as loss over all the batch samples
         return K.mean(gradient_penalty)
 
-    
+
     def get_run(self):
         runs = glob.glob('runs/*/')
         runs = sorted(runs, key=lambda x: int(x[5:-1]))
         # print('RUNS = ',runs)
         runs = [int(line[5:-1]) for line in runs]
-        
+
         if len(runs)>0: return runs[-1] + 1
         else: return 1
 
- 
+
     def plot_trajs(self, gen_trajs,epoch):
         plt.figure(figsize=(15, 2*len(gen_trajs)))
         for i, traj in enumerate(gen_trajs):
@@ -158,32 +161,39 @@ class WGANGP():
         plt.tight_layout()
         plt.savefig(self.dir_path+f'{epoch}_gen_traj.png', fmt='png', dpi=100)
         plt.close()
-   
- 
+
+
     def train(self, gen_iters, db_train, db_test):
-        
+
         # salvo info log #
         with open(self.dir_path+'logs.txt','a+') as f:
-            f.write(f"TRAINING\nbatch={self.batch_size}\nncritic={self.n_critic}\ngen_iterations={gen_iters}\ngen_lr={self.gen_lr} gen_b1={self.gen_b1}  gen_b2={self.gen_b2}\ncritic_lr={self.critic_lr} critic_b1={self.critic_b1} critic_b2={self.critic_b2}\n")
+            f.write((f"TRAINING\nbatch={self.batch_size}\nncritic={self.n_critic}\n"
+                    f"gen_iterations={gen_iters}\ngen_lr={self.gen_lr} gen_b1={self.gen_b1}"
+                    f" gen_b2={self.gen_b2}\ncritic_lr={self.critic_lr}"
+                    f" critic_b1={self.critic_b1} critic_b2={self.critic_b2}\n"))
             f.write(self.text)
+        log_fl = open(self.dir_path+'logs.txt','a+')
         fl = open(self.dir_path+'training.dat','a+')
-        fl.write(f"# gen_iteration, critic_iteration, d_loss_tot, d_loss_true, d_loss_fake, d_loss_gp, d_loss_tot_test, d_loss_true_test, d_loss_fake_test, d_loss_gp_test, g_loss\n")
+        fl.write((f"# gen_iteration, critic_iteration, d_loss_tot, d_loss_true,"
+                 f" d_loss_fake, d_loss_gp, d_loss_tot_test, d_loss_true_test,"
+                 f" d_loss_fake_test, d_loss_gp_test, g_loss\n"))
         fl.close()
 
         # ############## #
-        
+
         static_noise = np.random.normal(0, 1, size=(1, self.noise_dim))
         d_loss_test = [0., 0., 0., 0.]
         g_loss = 0.
-        
+        M = db_train.max()
+        m = db_train.min()
+        semidisp = (M-m)/2.
+        media = (M+m)/2.
+
         valid = -np.ones((self.batch_size, 1))
         fake =  np.ones((self.batch_size, 1))
         dummy = np.zeros((self.batch_size, 1)) # Dummy gt for gradient penalty
 
-        print(f'\nNCRITIC = {self.n_critic}\n')
-        
-
-        for gen_iter in range(gen_iters):            
+        for gen_iter in range(gen_iters):
 
             fl = open(self.dir_path+'training.dat','a+')
             for jj in range(self.n_critic):
@@ -207,76 +217,160 @@ class WGANGP():
                 d_loss = self.critic_model.train_on_batch([imgs, noise],
                                                            [valid, fake, dummy])
                 # print("disc trained")
-                if (jj!=self.n_critic-1): fl.write("%7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n"%(gen_iter,gen_iter*self.n_critic+jj,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss))
+                if (jj!=self.n_critic-1):
+                        fl.write(("%7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e"
+                                  " %11.4e %11.4e %11.4e %11.4e\n")%(gen_iter,
+                                  gen_iter*self.n_critic+jj,d_loss[0],d_loss[1],
+                                  d_loss[2],d_loss[3],d_loss_test[0],
+                                  d_loss_test[1],d_loss_test[2],d_loss_test[3],
+                                  g_loss))
 
 
             # ---------------------
             #  Train Generator
             # ---------------------
 
-            idx = np.random.randint(0, db_test.shape[0], self.batch_size)
-            imgs = db_test[idx]
+            #idx = np.random.randint(0, db_test.shape[0], self.batch_size)
+            #imgs = db_test[idx]
             #d_loss_test = self.critic_model.test_on_batch([imgs, noise],
             #                                              [valid, fake, dummy])
-            # print("init gen train") 
             g_loss = self.gen_model.train_on_batch(noise, valid)
-            # print("gen trained")
-
             # Plot the progress
-            print(f"Gen_Iter: {gen_iter:6d} [D loss: {d_loss[0]:9.2e}] [d_loss_test: {d_loss_test[0]:9.2e}] [G loss: {g_loss:9.2e}]")
-            fl.write("%7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n"%(gen_iter,gen_iter*self.n_critic+jj,d_loss[0],d_loss[1],d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],d_loss_test[2],d_loss_test[3],g_loss))
+            print((f"Gen_Iter: {gen_iter:6d} [D loss: {d_loss[0]:9.2e}] "
+                  f"[d_loss_test: {d_loss_test[0]:9.2e}] [G loss: {g_loss:9.2e}]"))
+            fl.write(("%7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e "
+                     "%11.4e %11.4e %11.4e %11.4e\n")%(
+                    gen_iter,gen_iter*self.n_critic+jj,d_loss[0],d_loss[1],
+                    d_loss[2],d_loss[3],d_loss_test[0],d_loss_test[1],
+                    d_loss_test[2],d_loss_test[3],g_loss))
             fl.close()
 
             # If at save interval => save generated image samples
             if gen_iter % 100 == 0:
-                self.plot_trajs(self.gen.predict(np.random.normal(0,1, size=(3,self.noise_dim))), gen_iter)
-            if gen_iter % 250 == 0:    
+                self.plot_trajs(self.gen.predict(
+                    np.random.normal(0,1, size=(3,self.noise_dim))),
+                    gen_iter)
+            if gen_iter % 250 == 0:
                 self.critic.save(self.dir_path+f'{gen_iter}_critic.h5')
                 self.gen.save(self.dir_path+f'{gen_iter}_gen.h5')
             if gen_iter % 2000 == 0:# and gen_iter > 0:    
-                mini_db = self.gen.predict(np.random.normal(0, 1, size=(50000, self.noise_dim)))
+                mini_db = self.gen.predict(
+                    np.random.normal(0, 1, size=(50000, self.noise_dim)))
+                mini_db = mini_db * semidisp + media
                 np.save(self.dir_path+f'gen_trajs_{gen_iter}', mini_db)
+
+                command_line = ("python ../compute_struct.py "+self.dir_path+
+                                  f"gen_trajs_{gen_iter}.npy ../data/"+
+                                  os.path.split(os.getcwd())[1]+
+                                  f"/struct_function_{mini_db.shape[0]}_part_gen"+
+                                  f"_{self.current_run}_{gen_iter}.npy")
+                args = shlex.split(command_line)
+                subprocess.Popen(args, stdout=log_fl, stderr=log_fl)
+                command_line = ("python ../compute_pdf.py "+self.dir_path+
+                                  f"gen_trajs_{gen_iter}.npy ../data/"+
+                                  os.path.split(os.getcwd())[1]+
+                                  f"/pdf0_{mini_db.shape[0]}_part_gen_"+
+                                  f"{self.current_run}_{gen_iter}.npy")
+                args = shlex.split(command_line)
+                subprocess.Popen(args, stdout=log_fl, stderr=log_fl)
+                command_line = ("python ../compute_pdf.py "+self.dir_path+
+                                  f"gen_trajs_{gen_iter}.npy ../data/"+
+                                  os.path.split(os.getcwd())[1]+
+                                  f"/pdf1_{mini_db.shape[0]}_part_gen_"+
+                                  f"{self.current_run}_{gen_iter}.npy -derivative")
+                args = shlex.split(command_line)
+                subprocess.Popen(args, stdout=log_fl, stderr=log_fl)
                 del mini_db
 
 
         self.critic.save(self.dir_path+f'{gen_iter+1}_critic.h5')
         self.gen.save(self.dir_path+f'{gen_iter+1}_gen.h5')
-        
+        log_fl.close()
 
-            
+
+
 if __name__ == '__main__' :
-    
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--gen_iters', type=int, default=20000)
-    parser.add_argument('--ncritic', type=int, default=5)
-    parser.add_argument('--load', type=int, default=[0], nargs=2)
-    args = parser.parse_args()
-    gen_iters = args.gen_iters
-    load = args.load
-    ncritic = args.ncritic
-    
-    print("Importing Databases ... ",end="")
-    db_train, db_test = load_data(0.8)
-    print("Done")
-    
+
     noise_dim = 100
-    
-    if load[0] > 0:
+
+    # ARGUMENTS AND OPTIONS PARSING
+
+    option_gen_iters = False
+    gen_iters = 20000
+    option_ncritic = False
+    ncritic = 5
+    option_load = False
+    load = [0, 0]
+    option_batch_size = False
+    batch_size = 500
+    option_gen_lr = False
+    gen_lr = 0.00005
+    option_critic_lr = False
+    critic_lr = 0.0001
+
+
+    read_path = sys.argv[1]
+    write_path = sys.argv[2]
+    sys.argv.pop(1)
+    sys.argv.pop(1)
+
+    i = 1
+    while i < len(sys.argv):
+        if sys.argv[i] == "-h":
+            print("usage: wgan.py [--gen_iters <20000>] [--ncritic <5>]"+
+                 "[--load <run> <number>] [--batch_size <500>]"+
+                 "[--gen_lr <0.00005>] [--critic_lr <0.0001>]")
+            exit()
+        elif sys.argv[i] == "--gen_iters":
+            option_gen_iters = True
+            sys.argv.pop(i)
+            gen_iters = int(sys.argv.pop(i))
+        elif sys.argv[i] == "--ncritic":
+            option_ncritic = True
+            sys.argv.pop(i)
+            ncritic = int(sys.argv.pop(i))
+        elif sys.argv[i] == "--load":
+            option_load = True
+            sys.argv.pop(i)
+            load[0] = int(sys.argv.pop(i))
+            load[1] = int(sys.argv.pop(i))
+        elif sys.argv[i] == "--batch_size":
+            option_batch_size = True
+            sys.argv.pop(i)
+            batch_size = int(sys.argv.pop(i))
+        elif sys.argv[i] == "--gen_lr":
+            option_gen_lr = True
+            sys.argv.pop(i)
+            gen_lr = float(sys.argv.pop(i))
+        elif sys.argv[i] == "--critic_lr":
+            option_critic_lr = True
+            sys.argv.pop(i)
+            critic_lr = float(sys.argv.pop(i))
+        else:
+            print("arg not recognized, exiting ...")
+            exit()
+            i += 1
+
+
+    # DB IMPORT
+
+
+    print("\nImporting Databases ... ",end="")
+    db_train, db_test = load_data(1.0)
+    print("Done")
+
+    # LOADING OR CREATING MODELS
+
+    if option_load:
         run = load[0]
         number = load[1]
         path_gen = f'runs/{run}/{number}_gen.h5'
         path_critic = f'runs/{run}/{number}_critic.h5'
-        #def wasserstein_loss(y_true, y_pred):
-        #    return K.mean(y_true * y_pred)
-        #tensorflow.keras.losses.wasserstein_loss = wasserstein_loss
-        #gen = load_model(path_gen, custom_objects={'wasserstein_loss': wasserstein_loss})
         gen = load_model(path_gen)
-        #critic = load_model(path_critic, custom_objects={'wasserstein_loss': wasserstein_loss})
         critic = load_model(path_critic)
         critic.trainable = True
-        
         # scrivo stringa info log gen #
-        text = f"continuo run {run} from number {number}"
+        text = f"\nModels loaded. Continuing run {run} from number {number}\n"
     else:
         fs=(100,1)
         fm=128
@@ -295,10 +389,15 @@ if __name__ == '__main__' :
         # scrivo stringa info log critic #
         text += f"CRITIC\n{fs,fm,init_sigma,init_mean,alpha}\n"
 
-            
-            
-            
-    
-    wgan = WGANGP(gen, critic, noise_dim, ncritic, 500, text)
-    print(f'Train for {gen_iters} generator iterations')
+
+    # TRAINING INIT
+
+
+    wgan = WGANGP(gen, critic, noise_dim, ncritic, batch_size,
+                  gen_lr, critic_lr, text)
+    print((f'\nTrain for {gen_iters} generator iterations.\n'
+           f"Parameters:\n    noise_dim: {noise_dim}\n    "
+           f"ncritic: {ncritic}\n    batch_size: {batch_size}\n    "
+           f"gen_lr: {gen_lr}\n    critic_lr: {critic_lr}\n"))
+    print(text)
     wgan.train(gen_iters, db_train, db_test)

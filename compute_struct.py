@@ -68,8 +68,8 @@ if __name__ == '__main__' :
         exit()
     print("path write: ", write_path)
     if os.path.isfile(write_path):
-        print("Write path already exists. Exiting.")
-        exit()
+        print("Write path already exists. Continuing.")
+        #exit()
     if not os.path.isdir(os.path.split(write_path)[0]):
         print("Invalid write_path: dir does not exist. Exiting.")
         exit()
@@ -98,5 +98,5 @@ if __name__ == '__main__' :
 
     s = compute_structure_function(db,option_npart_arg)
     print("Saving ...")
-    np.save(write_path,s)
+    np.savetxt(write_path,s)
     print("Done!")

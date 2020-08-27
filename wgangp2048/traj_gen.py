@@ -17,8 +17,10 @@ for ii in range(N):
     noise = np.random.normal(0, 1, size=(bs, 100))
     trajs[ii*bs:(ii+1)*bs,:,0:1] = gen.predict(noise, verbose=1, batch_size=bs)
 
+try: os.mkdir((f'/storage/scarpolini/databases/lagrangian/"
+               f"wgangp2048/runs/{run}'))
 
-try: os.mkdir(f'/storage/scarpolini/databases/lagrangian/wgangp2048/runs/{run}')
 except: print('Directory already exists')
 print('Saving ...')
-np.save(f'/storage/scarpolini/databases/lagrangian/wgangp2048/runs/{run}/gen_trajs_{number}', trajs)
+np.save((f'/storage/scarpolini/databases/lagrangian/"
+         f"wgangp2048/runs/{run}/gen_trajs_{number}', trajs))

@@ -4,44 +4,47 @@
 from db_utils import *
 
 def build_critic(fs, fm, init_sigma, init_mean, alpha):
-    """ 
+    """
     fs = 20 dimensione filtro
     fm = 4 numero di filtri
-    init_sigma = 0.2 varianza distribuzione normale per l'inizializzazione dei pesi del  modello
-    init_mean = 0.0 media distribuzione normale per l'inizializzazione dei pesi del  modello
+    init_sigma = 0.2 varianza distribuzione normale per l'inizializzazione
+    deipesi del  modello
+    init_mean = 0.0 media distribuzione normale per l'inizializzazione
+    dei pesi del  modello
     """
     reg = l2(l=0.001)
-    
-    discriminator = Sequential()
-    #2000x1
-    discriminator.add(Conv1D(fm//16, fs, strides=2, padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma), input_shape=(2048, 1)))
+
+    d = Sequential()
+    d.add(Conv1D(fm//16, fs, strides=2, padding='same', kernel_regularizer=reg
+          bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean,
+          init_sigma), input_shape=(2048, 1)))
+    # d.add(ELU())
+    d.add(ReLU(negative_slope=alpha))
+    d.add(Conv1D(fm//8, fs, strides=2, padding='same', kernel_regularizer=reg,
+          bias_regularizer=reg,
+          kernel_initializer=RandomNormal(init_mean, init_sigma)))
     #discriminator.add(ELU())
-    discriminator.add(ReLU(negative_slope=alpha))
-    #
-    discriminator.add(Conv1D(fm//8, fs, strides=2, padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma)))    
-    #discriminator.add(ELU())
-    discriminator.add(ReLU(negative_slope=alpha))
-    #
-    discriminator.add(Conv1D(fm//4, fs, strides=2, padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma))) 
-    #discriminator.add(ELU())
-    discriminator.add(ReLU(negative_slope=alpha))
-    #
-    discriminator.add(Conv1D(fm//2, fs, strides=2, padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma))) 
-    #discriminator.add(ELU())
-    discriminator.add(ReLU(negative_slope=alpha))
-    #
-    discriminator.add(Conv1D(fm, fs, strides=2, padding='same', kernel_regularizer=reg, bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean, init_sigma))) 
-    #discriminator.add(ELU())
-    discriminator.add(ReLU(negative_slope=alpha))
-    #
-    discriminator.add(Flatten())
-    #
-    discriminator.add(Dense(1, kernel_regularizer=reg, bias_regularizer=reg))
-    #1x1
-    #discriminator.summary()
-    discriminator.summary()
-    
-    return discriminator
+    d.add(ReLU(negative_slope=alpha))
+    d.add(Conv1D(fm//4, fs, strides=2, padding='same', kernel_regularizer=reg,
+          bias_regularizer=reg,
+          kernel_initializer=RandomNormal(init_mean, init_sigma)))
+    # d.add(ELU())
+    d.add(ReLU(negative_slope=alpha))
+    d.add(Conv1D(fm//2, fs, strides=2, padding='same', kernel_regularizer=reg,
+          bias_regularizer=reg,
+          kernel_initializer=RandomNormal(init_mean, init_sigma)))
+    # d.add(ELU())
+    d.add(ReLU(negative_slope=alpha))
+    d.add(Conv1D(fm, fs, strides=2, padding='same', kernel_regularizer=reg,
+          bias_regularizer=reg,
+          kernel_initializer=RandomNormal(init_mean, init_sigma)))
+    # d.add(ELU())
+    d.add(ReLU(negative_slope=alpha))
+    d.add(Flatten())
+    d.add(Dense(1, kernel_regularizer=reg, bias_regularizer=reg))
+    d.summary()
+
+    return d
 
 
 

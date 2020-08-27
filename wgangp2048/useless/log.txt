@@ -1,0 +1,3 @@
+path read:  runs/3/gen_trajs_0.npy
+path write:  ../data/wgangp2048/pdf1_50000_part_gen_{self.current_run}_{gen_iter}.npy
+Write path already exists. Exiting.
