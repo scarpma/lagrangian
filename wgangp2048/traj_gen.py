@@ -10,17 +10,19 @@ gen = load_model(path)
 
 N = 1
 bs = 50000
-trajs = np.zeros(shape=(N*bs,2048,1))
+trajs = np.zeros(shape=(N*bs,2048,1)) #VAR
 print('Generating Trajectories ...')
 for ii in range(N):
     print(ii)
-    noise = np.random.normal(0, 1, size=(bs, 100))
+    noise = np.random.normal(0, 1, size=(bs, 100)) #VAR
     trajs[ii*bs:(ii+1)*bs,:,0:1] = gen.predict(noise, verbose=1, batch_size=bs)
 
 try: os.mkdir((f'/storage/scarpolini/databases/lagrangian/"
-               f"wgangp2048/runs/{run}'))
+               f"wgangp2048/runs/{run}')) #VAR
 
 except: print('Directory already exists')
 print('Saving ...')
+#VAR
 np.save((f'/storage/scarpolini/databases/lagrangian/"
          f"wgangp2048/runs/{run}/gen_trajs_{number}', trajs))
+

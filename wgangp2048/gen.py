@@ -52,7 +52,7 @@ def build_generator(fs, fm, init_sigma, init_mean, alpha, noise_dim):
     #generator.add(ELU())
     generator.add(ReLU())
     generator.add(BatchNormalization(momentum=0.8))
-    generator.add(Conv2DTranspose(1,      fs, strides=(2,1), padding='same',
+    generator.add(Conv2DTranspose(1,      fs, strides=(2,1), padding='same', #VAR
                  kernel_regularizer=reg, bias_regularizer=reg,
                  kernel_initializer=RandomNormal(init_mean, init_sigma)))
     generator.add(Activation("tanh"))
@@ -62,7 +62,7 @@ def build_generator(fs, fm, init_sigma, init_mean, alpha, noise_dim):
     # generator.add(Conv2DTranspose(1, (10,1), padding='same',
     #               kernel_initializer=RandomNormal(init_mean, init_sigma)))
 
-    generator.add(Reshape((2048, 1)))
+    generator.add(Reshape((2048, 1))) #VAR
     generator.summary()
 
 

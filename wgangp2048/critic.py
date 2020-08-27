@@ -15,9 +15,9 @@ def build_critic(fs, fm, init_sigma, init_mean, alpha):
     reg = l2(l=0.001)
 
     d = Sequential()
-    d.add(Conv1D(fm//16, fs, strides=2, padding='same', kernel_regularizer=reg
+    d.add(Conv1D(fm//16, fs, strides=2, padding='same', kernel_regularizer=reg,
           bias_regularizer=reg, kernel_initializer=RandomNormal(init_mean,
-          init_sigma), input_shape=(2048, 1)))
+          init_sigma), input_shape=(2048, 1))) #VAR
     # d.add(ELU())
     d.add(ReLU(negative_slope=alpha))
     d.add(Conv1D(fm//8, fs, strides=2, padding='same', kernel_regularizer=reg,

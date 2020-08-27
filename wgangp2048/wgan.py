@@ -1,34 +1,38 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+
+# IMPORT MODULES
+
 from db_utils import *
-from gen import *
-from critic import *
 
 
 class RandomWeightedAverage(tensorflow.keras.layers.Layer):
+
     def __init__(self, batch_size):
         super().__init__()
         self.batch_size = batch_size
+
 
     def call(self, inputs, **kwargs):
         alpha = tensorflow.random_uniform((self.batch_size, 1, 1))
         return (alpha * inputs[0]) + ((1 - alpha) * inputs[1])
 
+
     def compute_output_shape(self, input_shape):
         return input_shape[0]
 
 
-
 class WGANGP():
+
     def __init__(self,gen,critic,noise_dim,n_critic,batch_size,gen_lr,critic_lr,text):
         #self.d_losses = []
         #self.d_losses_test = []
         #self.g_losses = []
         self.real_critics = []
         self.fake_critics = []
-        self.sig_len = 2048
-        self.channels = 1
+        self.sig_len = 2048 #VAR
+        self.channels = 1 #VAR
         self.noise_dim = noise_dim
         self.batch_size = batch_size
         self.text = text
@@ -52,10 +56,8 @@ class WGANGP():
         critic_optimizer = Adam(learning_rate=self.critic_lr,
                                 beta_1=self.critic_b1,beta_2=self.critic_b2)
 
-
         self.critic = critic
         self.gen = gen
-
 
         #-------------------------------
         # Construct Computational Graph
@@ -97,8 +99,6 @@ class WGANGP():
                                   optimizer=critic_optimizer,
                                   loss_weights=[1, 1, 10])
 
-
-
         #-------------------------------
         # Construct Computational Graph
         #         for Generator
@@ -117,7 +117,6 @@ class WGANGP():
         # Defines generator model
         self.gen_model = Model(z_gen, valid)
         self.gen_model.compile(loss=self.wasserstein_loss, optimizer=gen_optimizer)
-
 
 
     def wasserstein_loss(self, y_true, y_pred):
@@ -145,8 +144,14 @@ class WGANGP():
 
     def get_run(self):
         runs = glob.glob('runs/*/')
+        longest_string = max(runs, key=len)
+
+        print(longest_string)
+        if len(longest_string) > 8 :
+            print("Attention: more than 99 runs are not supported. Exiting.")
+            exit()
+
         runs = sorted(runs, key=lambda x: int(x[5:-1]))
-        # print('RUNS = ',runs)
         runs = [int(line[5:-1]) for line in runs]
 
         if len(runs)>0: return runs[-1] + 1
@@ -154,12 +159,12 @@ class WGANGP():
 
 
     def plot_trajs(self, gen_trajs,epoch):
-        plt.figure(figsize=(15, 2*len(gen_trajs)))
+        plt.figure(figsize=(13, 2*len(gen_trajs)), dpi=60)
         for i, traj in enumerate(gen_trajs):
             plt.subplot(len(gen_trajs), 1, i+1)
             plt.plot(traj)
         plt.tight_layout()
-        plt.savefig(self.dir_path+f'{epoch}_gen_traj.png', fmt='png', dpi=100)
+        plt.savefig(self.dir_path+f'{epoch}_gen_traj.png', fmt='png', dpi=60)
         plt.close()
 
 
@@ -181,8 +186,8 @@ class WGANGP():
 
         # ############## #
 
-        static_noise = np.random.normal(0, 1, size=(1, self.noise_dim))
-        d_loss_test = [0., 0., 0., 0.]
+        # static_noise = np.random.normal(0, 1, size=(1, self.noise_dim))
+        # d_loss_test = [0., 0., 0., 0.]
         g_loss = 0.
         M = db_train.max()
         m = db_train.min()
@@ -224,7 +229,6 @@ class WGANGP():
                                   d_loss[2],d_loss[3],d_loss_test[0],
                                   d_loss_test[1],d_loss_test[2],d_loss_test[3],
                                   g_loss))
-
 
             # ---------------------
             #  Train Generator
@@ -282,18 +286,18 @@ class WGANGP():
                 subprocess.Popen(args, stdout=log_fl, stderr=log_fl)
                 del mini_db
 
-
         self.critic.save(self.dir_path+f'{gen_iter+1}_critic.h5')
         self.gen.save(self.dir_path+f'{gen_iter+1}_gen.h5')
         log_fl.close()
 
 
-
 if __name__ == '__main__' :
 
-    noise_dim = 100
-
     # ARGUMENTS AND OPTIONS PARSING
+
+    import sys
+
+    noise_dim = 100 # FIXED
 
     option_gen_iters = False
     gen_iters = 20000
@@ -308,18 +312,13 @@ if __name__ == '__main__' :
     option_critic_lr = False
     critic_lr = 0.0001
 
-
-    read_path = sys.argv[1]
-    write_path = sys.argv[2]
-    sys.argv.pop(1)
-    sys.argv.pop(1)
-
     i = 1
     while i < len(sys.argv):
         if sys.argv[i] == "-h":
-            print("usage: wgan.py [--gen_iters <20000>] [--ncritic <5>]"+
-                 "[--load <run> <number>] [--batch_size <500>]"+
-                 "[--gen_lr <0.00005>] [--critic_lr <0.0001>]")
+            print((f"usage: wgan.py [--gen_iters <{gen_iters}>]"
+                   f" [--ncritic <{ncritic}>] [--load <null> <null>]"
+                   f" [--batch_size <{batch_size}>] [--gen_lr <{gen_lr}>]"
+                   f" [--critic_lr <{critic_lr}>]"))
             exit()
         elif sys.argv[i] == "--gen_iters":
             option_gen_iters = True
@@ -352,16 +351,10 @@ if __name__ == '__main__' :
             i += 1
 
 
-    # DB IMPORT
-
-
-    print("\nImporting Databases ... ",end="")
-    db_train, db_test = load_data(1.0)
-    print("Done")
-
     # LOADING OR CREATING MODELS
 
     if option_load:
+
         run = load[0]
         number = load[1]
         path_gen = f'runs/{run}/{number}_gen.h5'
@@ -371,7 +364,12 @@ if __name__ == '__main__' :
         critic.trainable = True
         # scrivo stringa info log gen #
         text = f"\nModels loaded. Continuing run {run} from number {number}\n"
+
     else:
+
+        from gen import *
+        from critic import *
+
         fs=(100,1)
         fm=128
         init_sigma = 0.003
@@ -390,8 +388,7 @@ if __name__ == '__main__' :
         text += f"CRITIC\n{fs,fm,init_sigma,init_mean,alpha}\n"
 
 
-    # TRAINING INIT
-
+    # WGANGP INIT
 
     wgan = WGANGP(gen, critic, noise_dim, ncritic, batch_size,
                   gen_lr, critic_lr, text)
@@ -400,4 +397,15 @@ if __name__ == '__main__' :
            f"ncritic: {ncritic}\n    batch_size: {batch_size}\n    "
            f"gen_lr: {gen_lr}\n    critic_lr: {critic_lr}\n"))
     print(text)
+
+
+    # DB IMPORT
+
+    print("\nImporting Databases ... ")
+    db_train, db_test = load_data(1.0)
+
+
+    # TRAINING
+
+    print("\nTraining ... \n",end="")
     wgan.train(gen_iters, db_train, db_test)

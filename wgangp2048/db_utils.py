@@ -28,20 +28,19 @@ import matplotlib as mpl
 
 
 def load_data(val_split):
-    path = '/scratch/scarpolini/databases/velocities_2048.npy'
-    db = np.load(path)[:,:,0:1]
+
+    path = '/scratch/scarpolini/databases/velocities_2048.npy' #VAR
+    db = np.load(path)[:,:,0:1] #VAR
     print(db.shape)
     M = db.max()
     m = db.min()
-    print(M,m)
+    print(M,m,"\n")
     semidisp = (M-m)/2.
     media = (M+m)/2.
     db = (db - media)/semidisp
-    M = db.max()
-    m = db.min()
-    print(M,m)
-    end = round(val_split * db.shape[0])
+
     if val_split < 1.:
+        end = round(val_split * db.shape[0])
         return db[:end,:,:], db[end:,:,:]
     elif val_split == 1.0 :
         return db, None
