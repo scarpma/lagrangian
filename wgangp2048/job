@@ -1,6 +1,11 @@
-#python wgan.py --gen_iters 10000 --ncritic 30 --batch_size 500 --gen_lr 0.00005 --critic_lr 0.0001 &&
-#python wgan.py --gen_iters 2500 --ncritic 30 --batch_size 1000 --gen_lr 0.000025 --critic_lr 0.00005 --load 1 10000 &&
-python wgan.py --gen_iters 1750 --ncritic 30 --batch_size 1000 --gen_lr 0.0000025 --critic_lr 0.000005 --load 3 2500
+# PROJECT NEW NOISE
+python wgan.py --gen_iters 10000 --ncritic 30 --batch_size 500 --gen_lr 0.00005 --critic_lr 0.0001 &&
+python wgan.py --gen_iters 2500 --ncritic 30 --batch_size 1000 --gen_lr 0.000025 --critic_lr 0.00005 --load 20 10000 &&
+python wgan.py --gen_iters 1750 --ncritic 30 --batch_size 1000 --gen_lr 0.0000025 --critic_lr 0.000005 --load 21 2500
 
 # >& log.txt &
 # tail -f log.txt
+
+# python wgan.py --gen_iters 10000 --ncritic 30 --batch_size 500 --gen_lr 0.00005 --critic_lr 0.0001 &&
+# python wgan.py --gen_iters 2500 --ncritic 30 --batch_size 1000 --gen_lr 0.000025 --critic_lr 0.00005 --load 5 10000 &&
+# python wgan.py --gen_iters 1750 --ncritic 30 --batch_size 1000 --gen_lr 0.0000025 --critic_lr 0.000005 --load 6 2500

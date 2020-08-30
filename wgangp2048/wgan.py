@@ -31,8 +31,8 @@ class WGANGP():
         #self.g_losses = []
         self.real_critics = []
         self.fake_critics = []
-        self.sig_len = 2048 #VAR
-        self.channels = 1 #VAR
+        self.sig_len = SIG_LEN
+        self.channels = CHANNELS
         self.noise_dim = noise_dim
         self.batch_size = batch_size
         self.text = text
@@ -49,8 +49,8 @@ class WGANGP():
         #self.gen_lr = self.critic_lr = 0.00001
         self.gen_lr = gen_lr
         self.critic_lr = critic_lr
-        self.gen_b1 = self.critic_b1 = 0.0 # di solito è 0.0
-        self.gen_b2 = self.critic_b2 = 0.9 # di solito è 0.9
+        self.gen_b1 = self.critic_b1 = 0.0 # wgangp article: 0.0
+        self.gen_b2 = self.critic_b2 = 0.9 # wgangp article: 0.9
         gen_optimizer = Adam(learning_rate=self.gen_lr,
                              beta_1=self.gen_b1,beta_2=self.gen_b2)
         critic_optimizer = Adam(learning_rate=self.critic_lr,
@@ -98,6 +98,8 @@ class WGANGP():
                                         partial_gp_loss],
                                   optimizer=critic_optimizer,
                                   loss_weights=[1, 1, 10])
+        print(self.critic_model.summary())
+
 
         #-------------------------------
         # Construct Computational Graph
@@ -117,6 +119,7 @@ class WGANGP():
         # Defines generator model
         self.gen_model = Model(z_gen, valid)
         self.gen_model.compile(loss=self.wasserstein_loss, optimizer=gen_optimizer)
+        print(self.gen_model.summary())
 
 
     def wasserstein_loss(self, y_true, y_pred):
@@ -141,6 +144,10 @@ class WGANGP():
         # return the mean as loss over all the batch samples
         return K.mean(gradient_penalty)
 
+    def gen_noise(self, n_samples):
+        yy = np.random.standard_t(4, size=(n_samples, self.noise_dim))
+        return yy
+
 
     def get_run(self):
         runs = glob.glob('runs/*/')
@@ -148,6 +155,7 @@ class WGANGP():
 
         print(longest_string)
         if len(longest_string) > 8 :
+            #TODO
             print("Attention: more than 99 runs are not supported. Exiting.")
             exit()
 
@@ -158,7 +166,7 @@ class WGANGP():
         else: return 1
 
 
-    def plot_trajs(self, gen_trajs,epoch):
+    def plot_trajs(self, gen_trajs, epoch):
         plt.figure(figsize=(13, 2*len(gen_trajs)), dpi=60)
         for i, traj in enumerate(gen_trajs):
             plt.subplot(len(gen_trajs), 1, i+1)
@@ -186,8 +194,7 @@ class WGANGP():
 
         # ############## #
 
-        # static_noise = np.random.normal(0, 1, size=(1, self.noise_dim))
-        # d_loss_test = [0., 0., 0., 0.]
+        d_loss_test = [0., 0., 0., 0.]
         g_loss = 0.
         M = db_train.max()
         m = db_train.min()
@@ -198,7 +205,7 @@ class WGANGP():
         fake =  np.ones((self.batch_size, 1))
         dummy = np.zeros((self.batch_size, 1)) # Dummy gt for gradient penalty
 
-        for gen_iter in range(gen_iters):
+        for gen_iter in range(gen_iters + 1):
 
             fl = open(self.dir_path+'training.dat','a+')
             for jj in range(self.n_critic):
@@ -215,8 +222,7 @@ class WGANGP():
                 # idx = np.arange(batch_start, batch_end)
                 imgs = db_train[idx]
                 # Sample generator input
-                noise = np.random.normal(0, 1, (self.batch_size, self.noise_dim))
-                #noise = np.random.uniform(-1., 1., (self.batch_size, self.noise_dim))
+                noise = self.gen_noise(self.batch_size)
                 # Train the critic
                 # print("init disc train") 
                 d_loss = self.critic_model.train_on_batch([imgs, noise],
@@ -238,10 +244,14 @@ class WGANGP():
             #imgs = db_test[idx]
             #d_loss_test = self.critic_model.test_on_batch([imgs, noise],
             #                                              [valid, fake, dummy])
+            ########### TEMP 29/08/20 14:53. UNUSED UNTIL RUN 19 ###############
+            noise = self.gen_noise(self.batch_size)                         #
+            ###################################################################
             g_loss = self.gen_model.train_on_batch(noise, valid)
             # Plot the progress
             print((f"Gen_Iter: {gen_iter:6d} [D loss: {d_loss[0]:9.2e}] "
-                  f"[d_loss_test: {d_loss_test[0]:9.2e}] [G loss: {g_loss:9.2e}]"))
+                  f"[d_loss_test: {d_loss_test[0]:9.2e}] "
+                  f"[G loss: {g_loss:9.2e}]"))
             fl.write(("%7d %7d %11.4e %11.4e %11.4e %11.4e %11.4e "
                      "%11.4e %11.4e %11.4e %11.4e\n")%(
                     gen_iter,gen_iter*self.n_critic+jj,d_loss[0],d_loss[1],
@@ -251,43 +261,25 @@ class WGANGP():
 
             # If at save interval => save generated image samples
             if gen_iter % 100 == 0:
-                self.plot_trajs(self.gen.predict(
-                    np.random.normal(0,1, size=(3,self.noise_dim))),
-                    gen_iter)
+                self.plot_trajs(self.gen.predict(self.gen_noise(4)),
+                                gen_iter)
+
             if gen_iter % 250 == 0:
                 self.critic.save(self.dir_path+f'{gen_iter}_critic.h5')
                 self.gen.save(self.dir_path+f'{gen_iter}_gen.h5')
+
             if gen_iter % 2000 == 0:# and gen_iter > 0:    
-                mini_db = self.gen.predict(
-                    np.random.normal(0, 1, size=(50000, self.noise_dim)))
+                mini_db = self.gen.predict(self.gen_noise(50000))
                 mini_db = mini_db * semidisp + media
                 np.save(self.dir_path+f'gen_trajs_{gen_iter}', mini_db)
-
-                command_line = ("python ../compute_struct.py "+self.dir_path+
-                                  f"gen_trajs_{gen_iter}.npy ../data/"+
-                                  os.path.split(os.getcwd())[1]+
-                                  f"/struct_function_{mini_db.shape[0]}_part_gen"+
-                                  f"_{self.current_run}_{gen_iter}.npy")
-                args = shlex.split(command_line)
-                subprocess.Popen(args, stdout=log_fl, stderr=log_fl)
-                command_line = ("python ../compute_pdf.py "+self.dir_path+
-                                  f"gen_trajs_{gen_iter}.npy ../data/"+
-                                  os.path.split(os.getcwd())[1]+
-                                  f"/pdf0_{mini_db.shape[0]}_part_gen_"+
-                                  f"{self.current_run}_{gen_iter}.npy")
-                args = shlex.split(command_line)
-                subprocess.Popen(args, stdout=log_fl, stderr=log_fl)
-                command_line = ("python ../compute_pdf.py "+self.dir_path+
-                                  f"gen_trajs_{gen_iter}.npy ../data/"+
-                                  os.path.split(os.getcwd())[1]+
-                                  f"/pdf1_{mini_db.shape[0]}_part_gen_"+
-                                  f"{self.current_run}_{gen_iter}.npy -derivative")
-                args = shlex.split(command_line)
-                subprocess.Popen(args, stdout=log_fl, stderr=log_fl)
                 del mini_db
+                command_line = ["python", "graphics/plot_pdfs.py",
+                        str(self.current_run), str(gen_iter), "--scratch"]
+                subprocess.Popen(command_line, stdout=log_fl, stderr=log_fl)
+                command_line = ["python", "graphics/plot_sf.py",
+                        str(self.current_run), str(gen_iter), "--scratch"]
+                subprocess.Popen(command_line, stdout=log_fl, stderr=log_fl)
 
-        self.critic.save(self.dir_path+f'{gen_iter+1}_critic.h5')
-        self.gen.save(self.dir_path+f'{gen_iter+1}_gen.h5')
         log_fl.close()
 
 
@@ -296,8 +288,6 @@ if __name__ == '__main__' :
     # ARGUMENTS AND OPTIONS PARSING
 
     import sys
-
-    noise_dim = 100 # FIXED
 
     option_gen_iters = False
     gen_iters = 20000
@@ -312,43 +302,41 @@ if __name__ == '__main__' :
     option_critic_lr = False
     critic_lr = 0.0001
 
-    i = 1
-    while i < len(sys.argv):
-        if sys.argv[i] == "-h":
+    while len(sys.argv) > 1:
+        if sys.argv[1] == "-h":
             print((f"usage: wgan.py [--gen_iters <{gen_iters}>]"
                    f" [--ncritic <{ncritic}>] [--load <null> <null>]"
                    f" [--batch_size <{batch_size}>] [--gen_lr <{gen_lr}>]"
                    f" [--critic_lr <{critic_lr}>]"))
             exit()
-        elif sys.argv[i] == "--gen_iters":
+        elif sys.argv[1] == "--gen_iters":
             option_gen_iters = True
-            sys.argv.pop(i)
-            gen_iters = int(sys.argv.pop(i))
-        elif sys.argv[i] == "--ncritic":
+            sys.argv.pop(1)
+            gen_iters = int(sys.argv.pop(1))
+        elif sys.argv[1] == "--ncritic":
             option_ncritic = True
-            sys.argv.pop(i)
-            ncritic = int(sys.argv.pop(i))
-        elif sys.argv[i] == "--load":
+            sys.argv.pop(1)
+            ncritic = int(sys.argv.pop(1))
+        elif sys.argv[1] == "--load":
             option_load = True
-            sys.argv.pop(i)
-            load[0] = int(sys.argv.pop(i))
-            load[1] = int(sys.argv.pop(i))
-        elif sys.argv[i] == "--batch_size":
+            sys.argv.pop(1)
+            load[0] = int(sys.argv.pop(1))
+            load[1] = int(sys.argv.pop(1))
+        elif sys.argv[1] == "--batch_size":
             option_batch_size = True
-            sys.argv.pop(i)
-            batch_size = int(sys.argv.pop(i))
-        elif sys.argv[i] == "--gen_lr":
+            sys.argv.pop(1)
+            batch_size = int(sys.argv.pop(1))
+        elif sys.argv[1] == "--gen_lr":
             option_gen_lr = True
-            sys.argv.pop(i)
-            gen_lr = float(sys.argv.pop(i))
-        elif sys.argv[i] == "--critic_lr":
+            sys.argv.pop(1)
+            gen_lr = float(sys.argv.pop(1))
+        elif sys.argv[1] == "--critic_lr":
             option_critic_lr = True
-            sys.argv.pop(i)
-            critic_lr = float(sys.argv.pop(i))
+            sys.argv.pop(1)
+            critic_lr = float(sys.argv.pop(1))
         else:
             print("arg not recognized, exiting ...")
             exit()
-            i += 1
 
 
     # LOADING OR CREATING MODELS
@@ -376,8 +364,8 @@ if __name__ == '__main__' :
         init_mean = 0.0
         alpha = 0.2
         # scrivo stringa info log gen #
-        text = f"GEN\n{fs,fm,init_sigma,init_mean,noise_dim,alpha}\n"
-        gen = build_generator(fs,fm,init_sigma,init_mean,alpha,noise_dim)
+        text = f"GEN\n{fs,fm,init_sigma,init_mean,NOISE_DIM,alpha}\n"
+        gen = build_generator(fs,fm,init_sigma,init_mean,alpha,NOISE_DIM)
         fs = 100
         fm = 128
         init_sigma = 0.02
@@ -390,10 +378,10 @@ if __name__ == '__main__' :
 
     # WGANGP INIT
 
-    wgan = WGANGP(gen, critic, noise_dim, ncritic, batch_size,
+    wgan = WGANGP(gen, critic, NOISE_DIM, ncritic, batch_size,
                   gen_lr, critic_lr, text)
     print((f'\nTrain for {gen_iters} generator iterations.\n'
-           f"Parameters:\n    noise_dim: {noise_dim}\n    "
+           f"Parameters:\n    noise_dim: {NOISE_DIM}\n    "
            f"ncritic: {ncritic}\n    batch_size: {batch_size}\n    "
            f"gen_lr: {gen_lr}\n    critic_lr: {critic_lr}\n"))
     print(text)

@@ -1,24 +1,29 @@
 from db_utils import *
 
-run = 10
-number = 5000
+run = 7
+number = 1750
 
-path = f'/scratch/scarpolini/lagrangian/wgangplstm/runs/{run}/{number}_gen.h5'
+#VAR
+path = f'/scratch/scarpolini/lagrangian/wgangp2048/runs/{run}/{number}_gen.h5'
 print('Loading Model ...')
 gen = load_model(path)
 
 
 N = 10
-bs = 5000
-trajs = np.zeros(shape=(N*bs,2000,1))
+bs = 50000
+trajs = np.zeros(shape=(N*bs,2048,1)) #VAR
 print('Generating Trajectories ...')
 for ii in range(N):
     print(ii)
-    noise = np.random.normal(0, 1, size=(bs, 25, 1))
+    noise = np.random.normal(0, 1, size=(bs, 100)) #VAR
     trajs[ii*bs:(ii+1)*bs,:,0:1] = gen.predict(noise, verbose=1, batch_size=bs)
 
+try: os.mkdir((f"/storage/scarpolini/databases/lagrangian/"
+               f"wgangp2048/runs/{run}")) #VAR
 
-try: os.mkdir(f'/storage/scarpolini/databases/lagrangian/wgangplstm/runs/{run}')
 except: print('Directory already exists')
 print('Saving ...')
-np.save(f'/storage/scarpolini/databases/lagrangian/wgangplstm/runs/{run}/gen_trajs_{number}', trajs)
+#VAR
+np.save((f"/storage/scarpolini/databases/lagrangian/"
+         f'wgangp2048/runs/{run}/gen_trajs_{number}'), trajs)
+

@@ -54,7 +54,7 @@ if __name__ == '__main__' :
     option_npart_arg = 0
 
     if len(sys.argv)<3:
-        print("usage: compute_struct.py read_path write_path [-npart <number>]")
+        print("usage: compute_struct.py read_path write_path [--npart <number>]")
         exit()
 
     read_path = sys.argv[1]
@@ -76,16 +76,14 @@ if __name__ == '__main__' :
 
     i = 1
     while i < len(sys.argv):
-        if sys.argv[i] == "-npart":
+        if sys.argv[i] == "--npart":
             option_npart = True
             sys.argv.pop(i)
             option_npart_arg = int(sys.argv.pop(i))
-        elif sys.argv[i] == "-p":
-            print("Unknown argument, continuing ...")
         else:
+            print("Unknown argument, exiting ...")
+            exit()
             i += 1
-
-
 
 
     # DATABASE IMPORT
@@ -93,7 +91,6 @@ if __name__ == '__main__' :
     db = np.load(read_path)
     if not option_npart:
         option_npart_arg = db.shape[0]
-
 
 
     s = compute_structure_function(db,option_npart_arg)

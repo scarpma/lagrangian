@@ -23,7 +23,9 @@ def build_generator(fm,fs,init_sigma, init_mean, noise_dim):
     generator = Sequential()
     # Starting size
 
-    generator.add(Bidirectional(LSTM(fm, return_sequences=True, kernel_initializer=RandomNormal(init_mean, init_sigma)), input_shape=(noise_dim,1), merge_mode='sum'))
+    generator.add(Bidirectional(LSTM(fm, return_sequences=True,
+        kernel_initializer=RandomNormal(init_mean, init_sigma)),
+        input_shape=(noise_dim,1), merge_mode='sum'))
     #generator.add(ELU())
     generator.add(ReLU())
     #20x1

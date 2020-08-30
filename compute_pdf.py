@@ -37,10 +37,8 @@ if __name__ == '__main__' :
         print("usage: compute_pdf.py read_path write_path [-npart <number>] [-derivative]")
         exit()
 
-    read_path = sys.argv[1]
-    write_path = sys.argv[2]
-    sys.argv.pop(1)
-    sys.argv.pop(1)
+    read_path = sys.argv.pop(1)
+    write_path = sys.argv.pop(1)
 
     print("path read: ", read_path)
     if not os.path.isfile(read_path):

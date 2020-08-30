@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from params import *
 import os
 import os.path
 import subprocess
 import sys
+sys.path.insert(0, '.')
 import glob
 import argparse
-import shlex
 
 import tensorflow
 import tensorflow.keras
