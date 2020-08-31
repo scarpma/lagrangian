@@ -116,7 +116,7 @@ ax[0,0].plot(*(vr), **op_real)
 ax[0,1].plot(*(vr), **op_real)
 
 #gen
-bins = stats.create_log_bins(gen.min(),gen.max(),800,1e-6) #VAR
+bins = stats.create_log_bins(gen.min(),gen.max(),600,1e-2) #VAR
 vg = stats.make_hist(gen, bins=bins)
 vg[1,:] = vg[1,:] * vstd
 vg[0,:] = vg[0,:] / vstd
@@ -136,7 +136,7 @@ ax[1,0].plot(*(ar), **op_real)
 ax[1,1].plot(*(ar), **op_real)
 
 #gen
-bins = stats.create_log_bins(gm.min(),gm.max(),800,5.e-6) #VAR
+bins = stats.create_log_bins(gm.min(),gm.max(),600,5.e-4) #VAR
 ag = stats.make_hist(gm, bins=bins)
 ag[1,:] = ag[1,:] * astd
 ag[0,:] = ag[0,:] / astd
@@ -156,7 +156,7 @@ ax[2,0].plot(*(rr), **op_real)
 ax[2,1].plot(*(rr), **op_real)
 
 #gen
-bins = stats.create_log_bins(gg.min(),gg.max(),800,1.e-6) #VAR
+bins = stats.create_log_bins(gg.min(),gg.max(),600,1.e-4) #VAR
 rg = stats.make_hist(gg, bins=bins)
 rg[1,:] = rg[1,:] * rstd
 rg[0,:] = rg[0,:] / rstd

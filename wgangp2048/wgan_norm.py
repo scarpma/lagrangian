@@ -149,8 +149,8 @@ class WGANGP():
         return K.mean(gradient_penalty)
 
     def gen_noise(self, n_samples):
-        yy = np.random.standard_t(4, size=(n_samples, self.noise_dim))
-        # yy = np.random.normal(0,1, size=(n_samples, self.noise_dim))
+        # yy = np.random.standard_t(4, size=(n_samples, self.noise_dim))
+        yy = np.random.normal(0,1, size=(n_samples, self.noise_dim))
         return yy
 
 

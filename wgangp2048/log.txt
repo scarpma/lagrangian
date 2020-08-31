@@ -1,0 +1,5 @@
+shape:  (500000, 2048, 1)
+Gen min, max:  -0.8172867298126221 0.8758007884025574
+veri -9.970374739869616 10.273698864467972
+After renorm Gen min, max -8.120944294788366 9.016549873878308
+Velocity done, Acceleration done, S. derivative done. Saving.
