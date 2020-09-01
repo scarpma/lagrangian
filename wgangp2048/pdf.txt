@@ -1,0 +1,3 @@
+shape:  (500000, 2048, 1)
+Gen min, max:  -9.969578960251468 10.241991963746113
+Velocity done, Acceleration done, S. derivative done. Saving.
