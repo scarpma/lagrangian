@@ -41,6 +41,30 @@ def make_hist(samples, bins='lin', std=False, out=False):
             hist = hist * std
             bins = (bins - mean) / std
 
+    elif type(samples)==type('str') and samples[-4:]==".dat" :
+
+        import numpy
+        bh = np.loadtxt(samples)
+        if std :
+            std_done = True
+            std = 0.
+            mean = 0.
+            mean = mean + (bh[0,1]-bh[0,0])*bh[1,0]*bh[0,0]
+            for i in range(1,bh.shape[1]-1):
+                mean = mean + ((bh[0,i+1]-bh[0,i-1])/2.)*bh[1,i]*bh[0,i]
+            mean = mean + (bh[0,-1]-bh[0,-2])*bh[1,-1]*bh[0,-1]
+            std = std + (bh[0,1]-bh[0,0])*bh[1,0]*(bh[0,0]-mean)**2.
+            for i in range(1,bh.shape[1]-1):
+                std = std + ((bh[0,i+1]-bh[0,i-1])/2.)*bh[1,i]*(bh[0,i]-mean)**2.
+            std = std + (bh[0,-1]-bh[0,-2])*bh[1,-1]*(bh[0,-1]-mean)**2.
+            std = np.sqrt(std)
+            bh[1,:] = bh[1,:] * std
+            bh[0,:] = (bh[0,:] - mean) / std
+
+            if out : return bh, mean, std
+
+        return bh
+
     elif type(samples) == type(np.ndarray([])) :
 
         hist, bins = np.histogram(samples.flatten(), bins=bins, density=True)
@@ -63,7 +87,7 @@ def make_hist(samples, bins='lin', std=False, out=False):
     binhist[0,:] = bins
     binhist[1,:] = hist
 
-    if out : return binhist, mean, std
+    if std and out : return binhist, mean, std
 
     return binhist
 

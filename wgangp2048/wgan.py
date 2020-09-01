@@ -201,12 +201,8 @@ class WGANGP():
 
         d_loss_test = [0., 0., 0., 0.]
         g_loss = 0.
-        M = 10.273698864467972 #VAR
-        m = -9.970374739869616 #VAR
-        # M = db_train.max()
-        # m = db_train.min()
-        semidisp = (M-m)/2.
-        media = (M+m)/2.
+        semidisp = (DB_MAX-DB_MIN)/2.
+        media = (DB_MAX+DB_MIN)/2.
 
         valid = -np.ones((self.batch_size, 1))
         fake =  np.ones((self.batch_size, 1))

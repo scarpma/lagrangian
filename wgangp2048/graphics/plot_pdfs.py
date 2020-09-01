@@ -15,7 +15,7 @@ import stats
 
 if "-h" in sys.argv:
     print(("usage: plot_pdfs.py <run> <number> [--gen_renorm]"
-           " [--comp_real] [--scratch]"))
+           " [--comp_real] [--scratch] [--no_gen]"))
     exit()
 
 run = int(sys.argv.pop(1))
@@ -23,6 +23,7 @@ number = int(sys.argv.pop(1))
 gen_renorm = False
 comp_real = False
 scratch = False
+plot_gen = True
 
 while len(sys.argv) > 1:
     if sys.argv[1] == '--gen_renorm':
@@ -33,6 +34,9 @@ while len(sys.argv) > 1:
         sys.argv.pop(1)
     elif sys.argv[1] == '--scratch':
         scratch = True
+        sys.argv.pop(1)
+    elif sys.argv[1] == '--no_gen':
+        plot_gen = False
         sys.argv.pop(1)
     else:
         raise NameError('Parsing error, exiting.')
@@ -45,25 +49,24 @@ else:
     read_path = (f'/storage/scarpolini/databases/'+DB_NAME+'/'+
             WGAN_TYPE+f'/runs/{run}/gen_trajs_{number}.npy')
 
-if not comp_real:
-    read_path_r = ['../data/pdf_vx.pickle', '../data/pdf_ax.pickle', #VAR
-                    '../data/pdf_aax.pickle']
+read_path_r = ['../data/real/pdf0.dat', '../data/real/pdf1.dat',
+                    '../data/real/pdf2.dat']
 
-write_path = f'runs/{run}/{number}_pdfs'
-gen = np.load(read_path)
+if plot_gen:
+    write_path = f'runs/{run}/{number}_pdfs'
+else:
+    write_path = '../data/real/pdfs_real'
 
-print('shape: ',gen.shape)
-M = gen.max()
-m = gen.min()
-print('Gen min, max: ',m,M)
+if plot_gen :
+    gen = np.load(read_path)
+    print('shape: ',gen.shape)
+    M = gen.max()
+    m = gen.min()
+    print('Gen min, max: ',m,M)
 
 if gen_renorm:
-    #M = db.max() 
-    M = 10.273698864467972 #VAR
-    #m = db.min()
-    m = -9.970374739869616 #VAR
-    semidisp = (M-m)/2.
-    media = (M+m)/2.
+    semidisp = (DB_MAX - DB_MIN)/2.
+    media = (DB_MAX + DB_MIN)/2.
     gen = gen*semidisp + media
     print('veri',m,M)
     M = gen.max()
@@ -111,57 +114,72 @@ ax[2,0].set_xlim([-4,4])
 if not comp_real:
     vr, _, vstd = stats.make_hist(read_path_r[0], std=True, out=True)
 else:
-    raise NameError('COMPUTE REAL TODO')
+    db = np.load(REAL_DB_PATH)[:,:,COMPONENTS]
+    bins = stats.create_log_bins(db.min(),db.max(),600,1e-2) #VAR
+    vr = stats.make_hist(db, bins=bins)
+    np.savetxt(read_path_r[0], vr)
+    vr, _, vstd = stats.make_hist(read_path_r[0], std=True, out=True)
 ax[0,0].plot(*(vr), **op_real)
 ax[0,1].plot(*(vr), **op_real)
 
 #gen
-bins = stats.create_log_bins(gen.min(),gen.max(),600,1e-2) #VAR
-vg = stats.make_hist(gen, bins=bins)
-vg[1,:] = vg[1,:] * vstd
-vg[0,:] = vg[0,:] / vstd
-ax[0,0].plot(*(vg), **op_gen)
-ax[0,1].plot(*(vg), **op_gen)
+if plot_gen:
+    bins = stats.create_log_bins(gen.min(),gen.max(),600,1e-2) #VAR
+    vg = stats.make_hist(gen, bins=bins)
+    vg[1,:] = vg[1,:] * vstd
+    vg[0,:] = vg[0,:] / vstd
+    ax[0,0].plot(*(vg), **op_gen)
+    ax[0,1].plot(*(vg), **op_gen)
 print("Velocity done,",end=" ")
 
 # ACCELERATION
-gm = np.gradient(gen,axis=1)
+if plot_gen: gm = np.gradient(gen,axis=1)
 
 #real
 if not comp_real:
     ar, _, astd = stats.make_hist(read_path_r[1], std=True, out=True)
 else:
-    raise NameError('COMPUTE REAL TODO')
+    dba = np.gradient(db, axis=1)
+    bins = stats.create_log_bins(dba.min(),dba.max(),600,5e-4) #VAR
+    ar = stats.make_hist(dba, bins=bins)
+    np.savetxt(read_path_r[1], ar)
+    ar, _, astd = stats.make_hist(read_path_r[1], std=True, out=True)
 ax[1,0].plot(*(ar), **op_real)
 ax[1,1].plot(*(ar), **op_real)
 
 #gen
-bins = stats.create_log_bins(gm.min(),gm.max(),600,5.e-4) #VAR
-ag = stats.make_hist(gm, bins=bins)
-ag[1,:] = ag[1,:] * astd
-ag[0,:] = ag[0,:] / astd
-ax[1,0].plot(*(ag), **op_gen)
-ax[1,1].plot(*(ag), **op_gen)
+if plot_gen:
+    bins = stats.create_log_bins(gm.min(),gm.max(),600,5.e-4) #VAR
+    ag = stats.make_hist(gm, bins=bins)
+    ag[1,:] = ag[1,:] * astd
+    ag[0,:] = ag[0,:] / astd
+    ax[1,0].plot(*(ag), **op_gen)
+    ax[1,1].plot(*(ag), **op_gen)
 print("Acceleration done,",end=" ")
 
 # SECOND DERIVATIVE
-gg = np.gradient(gm,axis=1)
+if plot_gen: gg = np.gradient(gm,axis=1)
 
 #real
 if not comp_real:
     rr, _, rstd = stats.make_hist(read_path_r[2], std=True, out=True)
 else:
-    raise NameError('COMPUTE REAL TODO')
+    dbr = np.gradient(dba, axis=1)
+    bins = stats.create_log_bins(dbr.min(),dbr.max(),600,1e-4) #VAR
+    rr = stats.make_hist(dbr, bins=bins)
+    np.savetxt(read_path_r[2], rr)
+    rr, _, rstd = stats.make_hist(read_path_r[2], std=True, out=True)
 ax[2,0].plot(*(rr), **op_real)
 ax[2,1].plot(*(rr), **op_real)
 
 #gen
-bins = stats.create_log_bins(gg.min(),gg.max(),600,1.e-4) #VAR
-rg = stats.make_hist(gg, bins=bins)
-rg[1,:] = rg[1,:] * rstd
-rg[0,:] = rg[0,:] / rstd
-ax[2,0].plot(*(rg), **op_gen)
-ax[2,1].plot(*(rg), **op_gen)
+if plot_gen:
+    bins = stats.create_log_bins(gg.min(),gg.max(),600,1.e-4) #VAR
+    rg = stats.make_hist(gg, bins=bins)
+    rg[1,:] = rg[1,:] * rstd
+    rg[0,:] = rg[0,:] / rstd
+    ax[2,0].plot(*(rg), **op_gen)
+    ax[2,1].plot(*(rg), **op_gen)
 print("S. derivative done. Saving.")
 
 ax[0,0].legend(**op_leg)

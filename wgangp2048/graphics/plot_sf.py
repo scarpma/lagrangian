@@ -15,7 +15,7 @@ import stats
 
 if "-h" in sys.argv:
     print(("usage: plot_sf.py <run> <number> [--gen_renorm] "
-           "[--comp_real] [--scratch]"))
+           "[--comp_real] [--scratch] [--no_gen]"))
     exit()
 
 run = int(sys.argv.pop(1))
@@ -23,6 +23,7 @@ number = int(sys.argv.pop(1))
 gen_renorm = False
 comp_real = False
 scratch = False
+plot_gen = True
 
 while len(sys.argv) > 1:
     if sys.argv[1] == '--gen_renorm':
@@ -30,6 +31,9 @@ while len(sys.argv) > 1:
         sys.argv.pop(1)
     elif sys.argv[1] == '--comp_real':
         comp_real = True
+        sys.argv.pop(1)
+    elif sys.argv[1] == '--no_gen':
+        plot_gen = False
         sys.argv.pop(1)
     elif sys.argv[1] == '--scratch':
         scratch = True
@@ -46,29 +50,33 @@ else:
     read_path = (f'/storage/scarpolini/databases/'+DB_NAME+'/'+
             WGAN_TYPE+f'/runs/{run}/gen_trajs_{number}.npy')
 
+read_path_r = '../data/real/sf2048.dat' #VAR
 if not comp_real:
-    read_path_r = '../data/real/sf2048.dat' #VAR
-
     sfr = np.loadtxt(read_path_r)
 else:
-    raise NameError('Compute real TODO')
+    db = np.load(REAL_DB_PATH)[:,:,COMPONENTS]
+    if db.size == 3:
+        assert db.shape[2] == 1 # not ready to handle multi-dim sf
+    sfr = stats.compute_sf(db)
+    np.savetxt(read_path_r, sfr)
 
-write_path = f'runs/{run}/{number}_sf'
-save_path = '../data/'+WGAN_TYPE+f'sf_{run}_{number}.dat'
-gen = np.load(read_path)
 
-print('shape: ',gen.shape)
-M = gen.max()
-m = gen.min()
-print('Gen min, max: ',m,M)
+if plot_gen:
+    write_path = f'runs/{run}/{number}_sf'
+else:
+    write_path = f'../data/real/real_sfs'
+
+save_path = '../data/'+WGAN_TYPE+f'/sf_{run}_{number}.dat'
+if plot_gen :
+    gen = np.load(read_path)
+    print('shape: ',gen.shape)
+    M = gen.max()
+    m = gen.min()
+    print('Gen min, max: ',m,M)
 
 if gen_renorm:
-    #M = db.max() 
-    M = 10.273698864467972 #VAR
-    #m = db.min()
-    m = -9.970374739869616 #VAR
-    semidisp = (M-m)/2.
-    media = (M+m)/2.
+    semidisp = (DB_MAX - DB_MIN)/2.
+    media = (DB_MAX + DB_MIN)/2.
     gen = gen*semidisp + media
     print('veri',m,M)
     M = gen.max()
@@ -77,18 +85,16 @@ if gen_renorm:
 
 
 # COMPUTE GEN SF
-
-sfg = stats.compute_sf(gen)
-np.savetxt(save_path, sfg)
-
-
-# LOG DERIVATIVES
+if plot_gen:
+    sfg = stats.compute_sf(gen)
+    np.savetxt(save_path, sfg)
+    # LOG DERIVATIVES
+    dlg = np.zeros(shape=sfg.shape)
+    dlg[:,0] = sfg[:,0]
+    dlg[:,1:] =  np.gradient( np.log(sfg[:,1:]), np.log(sfg[:,0]), axis=0  )
 dlr = np.zeros(shape=sfr.shape)
-dlg = np.zeros(shape=sfg.shape)
 dlr[:,0] = sfr[:,0]
 dlr[:,1:] =  np.gradient( np.log(sfr[:,1:]), np.log(sfr[:,0]), axis=0 )
-dlg[:,0] = sfg[:,0]
-dlg[:,1:] =  np.gradient( np.log(sfg[:,1:]), np.log(sfg[:,0]), axis=0  )
 
 
 op_gen = {'marker':'.','lw':0.4,'ms':25,'markeredgewidth':1 ,
@@ -130,27 +136,30 @@ ax[1,1].set_ylabel("$\\xi_n(\\tau)/ \\xi_2(\\tau)$")
 for ii in range(1,4):
     ax[0,0].plot(sfr[:,0],sfr[:,ii],label="DNS n="+str((ii)*2),
                  color='C'+str(ii-1),**op_real)
-for ii in range(1,4):
-    ax[0,0].plot(sfg[:,0],sfg[:,ii],label="GAN n="+str((ii)*2),
-                 color='C'+str(ii-1),**op_gen)
+if plot_gen:
+    for ii in range(1,4):
+        ax[0,0].plot(sfg[:,0],sfg[:,ii],label="GAN n="+str((ii)*2),
+                     color='C'+str(ii-1),**op_gen)
 
 #flatnesses
 ax[0,1].plot(sfr[:,0],sfr[:,2]/sfr[:,1]**2., label="DNS $F_4$",
              color='C0',**op_real)
 ax[0,1].plot(sfr[:,0],sfr[:,3]/sfr[:,1]**3., label="DNS $F_6$",
              color='C1',**op_real)
-ax[0,1].plot(sfg[:,0],sfg[:,2]/sfg[:,1]**2., label="GAN $F_4$",
-             color='C0',**op_gen)
-ax[0,1].plot(sfg[:,0],sfg[:,3]/sfg[:,1]**3., label="GAN $F_6$",
-             color='C1',**op_gen)
+if plot_gen:
+    ax[0,1].plot(sfg[:,0],sfg[:,2]/sfg[:,1]**2., label="GAN $F_4$",
+                 color='C0',**op_gen)
+    ax[0,1].plot(sfg[:,0],sfg[:,3]/sfg[:,1]**3., label="GAN $F_6$",
+                 color='C1',**op_gen)
 
 # locslopes
 for ii in range(1,4):
     ax[1,0].plot(*(dlr[:,[0,ii]].T), label="DNS n="+str((ii)*2),
                  color='C'+str(ii-1),**op_real)
-for ii in range(1,4):
-    ax[1,0].plot(*(dlg[:,[0,ii]].T), label="GAN n= "+str((ii)*2),
-                 color='C'+str(ii-1),**op_gen)
+if plot_gen:
+    for ii in range(1,4):
+        ax[1,0].plot(*(dlg[:,[0,ii]].T), label="GAN n= "+str((ii)*2),
+                     color='C'+str(ii-1),**op_gen)
 
 #locslopes ess
 ax[1,1].plot(dlr[:,0], (lambda x: [4/2]*len(x))(dlr[:,0]),ls='--',
@@ -160,9 +169,10 @@ ax[1,1].plot(dlr[:,0], (lambda x: [6/2]*len(x))(dlr[:,0]),ls='--',
 for ii in range(2):
     ax[1,1].plot(dlr[:,0],dlr[:,ii+2]/dlr[:,1],label="DNS n="+str((ii+2)*2),
                  color='C'+str(ii),**op_real)
-for ii in range(2):
-    ax[1,1].plot(dlg[:,0],dlg[:,ii+2]/dlg[:,1],label="GAN n="+str((ii+2)*2),
-                 color='C'+str(ii),**op_gen)
+if plot_gen:
+    for ii in range(2):
+        ax[1,1].plot(dlg[:,0],dlg[:,ii+2]/dlg[:,1],label="GAN n="+str((ii+2)*2),
+                     color='C'+str(ii),**op_gen)
 
 ax[0,0].legend(**op_leg)
 ax[0,1].legend(**op_leg)

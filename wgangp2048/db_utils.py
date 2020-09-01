@@ -30,8 +30,7 @@ import matplotlib as mpl
 
 def load_data(val_split):
 
-    path = '/scratch/scarpolini/databases/velocities_2048.npy' #VAR
-    db = np.load(path)[:,:,0:1] #VAR
+    db = np.load(REAL_DB_PATH)[:,:,COMPONENTS]
     print(db.shape)
     M = db.max()
     m = db.min()
