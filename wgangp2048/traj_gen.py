@@ -33,8 +33,9 @@ trajs = np.zeros(shape=(N*bs,SIG_LEN,CHANNELS))
 print('Generating Trajectories ...')
 for ii in range(N):
     print(ii)
-    #noise = np.random.normal(0, 1, size=(bs, NOISE_DIM)) #VAR
+    # noise = np.random.normal(0, 1, size=(bs, NOISE_DIM)) #VAR
     noise = np.random.standard_t(4, size=(bs, NOISE_DIM)) #VAR
+    # noise = np.random.standard_t(3.5, size=(bs, NOISE_DIM)) #VAR
     trajs[ii*bs:(ii+1)*bs,:,0:1] = gen.predict(noise, verbose=1, batch_size=bs)
 
 if renorm:

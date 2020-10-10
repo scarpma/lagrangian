@@ -1,0 +1,76 @@
+shape:  (5000000, 1800, 1)
+Gen min, max:  -9.970251059185976 10.262953124681143
+Database with more than one component. Only x taken
+Taking entire dataset, None samples
+Converting database to fortran order
+(1800, 5000000)
+ From fortran: npart=              5000000  times=                 1800
+ From fortran:                     1
+ From fortran: time - taus(index) )                 1799
+ From fortran:                     2
+ From fortran: time - taus(index) )                 1798
+ From fortran:                     3
+ From fortran: time - taus(index) )                 1797
+ From fortran:                     4
+ From fortran: time - taus(index) )                 1796
+ From fortran:                     5
+ From fortran: time - taus(index) )                 1795
+ From fortran:                     6
+ From fortran: time - taus(index) )                 1794
+ From fortran:                     7
+ From fortran: time - taus(index) )                 1793
+ From fortran:                     8
+ From fortran: time - taus(index) )                 1792
+ From fortran:                    10
+ From fortran: time - taus(index) )                 1790
+ From fortran:                    12
+ From fortran: time - taus(index) )                 1788
+ From fortran:                    15
+ From fortran: time - taus(index) )                 1785
+ From fortran:                    18
+ From fortran: time - taus(index) )                 1782
+ From fortran:                    22
+ From fortran: time - taus(index) )                 1778
+ From fortran:                    26
+ From fortran: time - taus(index) )                 1774
+ From fortran:                    31
+ From fortran: time - taus(index) )                 1769
+ From fortran:                    38
+ From fortran: time - taus(index) )                 1762
+ From fortran:                    46
+ From fortran: time - taus(index) )                 1754
+ From fortran:                    55
+ From fortran: time - taus(index) )                 1745
+ From fortran:                    66
+ From fortran: time - taus(index) )                 1734
+ From fortran:                    79
+ From fortran: time - taus(index) )                 1721
+ From fortran:                    95
+ From fortran: time - taus(index) )                 1705
+ From fortran:                   114
+ From fortran: time - taus(index) )                 1686
+ From fortran:                   137
+ From fortran: time - taus(index) )                 1663
+ From fortran:                   164
+ From fortran: time - taus(index) )                 1636
+ From fortran:                   197
+ From fortran: time - taus(index) )                 1603
+ From fortran:                   237
+ From fortran: time - taus(index) )                 1563
+ From fortran:                   284
+ From fortran: time - taus(index) )                 1516
+ From fortran:                   341
+ From fortran: time - taus(index) )                 1459
+ From fortran:                   410
+ From fortran: time - taus(index) )                 1390
+ From fortran:                   492
+ From fortran: time - taus(index) )                 1308
+ From fortran:                   590
+ From fortran: time - taus(index) )                 1210
+ From fortran:                   708
+ From fortran: time - taus(index) )                 1092
+ From fortran:                   850
+ From fortran: time - taus(index) )                  950
+ From fortran:                  1020
+ From fortran: time - taus(index) )                  780
+ Done.

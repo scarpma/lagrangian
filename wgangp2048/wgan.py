@@ -150,6 +150,7 @@ class WGANGP():
 
     def gen_noise(self, n_samples):
         yy = np.random.standard_t(4, size=(n_samples, self.noise_dim))
+        # yy = np.random.standard_t(3.5, size=(n_samples, self.noise_dim))
         # yy = np.random.normal(0,1, size=(n_samples, self.noise_dim))
         return yy
 
@@ -365,6 +366,7 @@ if __name__ == '__main__' :
         from critic import *
 
         fs=(100,1)
+        # fs=100
         fm=128
         init_sigma = 0.003
         init_mean = 0.0

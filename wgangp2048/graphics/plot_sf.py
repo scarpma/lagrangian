@@ -14,7 +14,7 @@ import stats
 # COMMAND LINE PARSING
 
 if "-h" in sys.argv:
-    print(("usage: plot_sf.py <run> <number> [--gen_renorm] "
+    print(("usage: plot_sf.py <run> <number> [--gen_renorm] [--read_gen]"
            "[--comp_real] [--scratch] [--no_gen]"))
     exit()
 
@@ -24,6 +24,7 @@ gen_renorm = False
 comp_real = False
 scratch = False
 plot_gen = True
+read_gen = False
 
 while len(sys.argv) > 1:
     if sys.argv[1] == '--gen_renorm':
@@ -38,10 +39,12 @@ while len(sys.argv) > 1:
     elif sys.argv[1] == '--scratch':
         scratch = True
         sys.argv.pop(1)
+    elif sys.argv[1] == '--read_gen':
+        read_gen = True
+        sys.argv.pop(1)
     else:
         raise NameError('Parsing error, exiting.')
         exit()
-
 
 if scratch:
     read_path = (f'/scratch/scarpolini/'+DB_NAME+'/'+WGAN_TYPE+
@@ -50,7 +53,7 @@ else:
     read_path = (f'/storage/scarpolini/databases/'+DB_NAME+'/'+
             WGAN_TYPE+f'/runs/{run}/gen_trajs_{number}.npy')
 
-read_path_r = '../data/real/sf2048.dat' #VAR
+read_path_r = '../data/real/sf.dat'
 if not comp_real:
     sfr = np.loadtxt(read_path_r)
 else:
@@ -61,14 +64,21 @@ else:
     np.savetxt(read_path_r, sfr)
 
 
-if plot_gen:
-    write_path = f'runs/{run}/{number}_sf'
+if plot_gen and (not read_gen):
+    write_path = f'runs/{run}/{number}_sf_we'
+    nn = 0
+    save_path = '../data/'+WGAN_TYPE+f'/runs/{run}/sf_{run}_{number}_we_{str(nn).zfill(4)}.dat'
+    while os.path.exists(save_path):
+        nn = nn + 1
+        save_path = '../data/'+WGAN_TYPE+f'/runs/{run}/sf_{run}_{number}_we_{str(nn).zfill(4)}.dat'
+elif plot_gen and read_gen:
+    write_path = f'runs/{run}/{number}_sf_we_mean'
 else:
-    write_path = f'../data/real/real_sfs'
+    write_path = f'../data/real/real_sfs.dat'
 
-save_path = '../data/'+WGAN_TYPE+f'/sf_{run}_{number}.dat'
-if plot_gen :
+if plot_gen and (not read_gen):
     gen = np.load(read_path)
+    gen = gen[:,100:1900] # WE WITHOUT EXTREMES
     print('shape: ',gen.shape)
     M = gen.max()
     m = gen.min()
@@ -85,9 +95,25 @@ if gen_renorm:
 
 
 # COMPUTE GEN SF
-if plot_gen:
-    sfg = stats.compute_sf(gen)
-    np.savetxt(save_path, sfg)
+if plot_gen :
+    if (not read_gen) :
+        sfg = stats.compute_sf(gen)
+        np.savetxt(save_path, sfg)
+    else:
+        nn = 0
+        sfg_path = '../data/'+WGAN_TYPE+f'/runs/{run}/sf_{run}_{number}_we_{str(nn).zfill(4)}.dat'
+        sfg = np.loadtxt(sfg_path)
+        nn = nn + 1
+        sfg_path = '../data/'+WGAN_TYPE+f'/runs/{run}/sf_{run}_{number}_we_{str(nn).zfill(4)}.dat'
+        # SUM
+        while os.path.exists(sfg_path):
+            temp = np.loadtxt(sfg_path)
+            assert sfg[:,0] == temp[:,0]
+            sfg[:,1:] = sfg[:,1:] + temp[:,1:]
+            nn = nn + 1
+            sfg_path = '../data/'+WGAN_TYPE+f'/runs/{run}/sf_{run}_{number}_we_{str(nn).zfill(4)}.dat'
+        sfg[:,1:] = sfg[:,1:] / nn
+
     # LOG DERIVATIVES
     dlg = np.zeros(shape=sfg.shape)
     dlg[:,0] = sfg[:,0]

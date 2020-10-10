@@ -5,3 +5,4 @@ data/*
 plots/*
 *.so
 *.png
+hid_layers_outputs.npy

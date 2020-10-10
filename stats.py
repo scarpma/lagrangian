@@ -18,7 +18,7 @@ def create_log_bins(xmin,xmax,nbin,eps):
         return 0
 
 
-def make_hist(samples, bins='lin', std=False, out=False):
+def make_hist(samples, bins='lin', std=False, out=False, hist=False):
     import numpy as np
 
     std_done = False
@@ -66,8 +66,11 @@ def make_hist(samples, bins='lin', std=False, out=False):
         return bh
 
     elif type(samples) == type(np.ndarray([])) :
-
-        hist, bins = np.histogram(samples.flatten(), bins=bins, density=True)
+        ## CASO STANDARD IN CUI VIENE FORNITO UN DB IN FORMATO NUMPY ARRAY
+        if hist:
+            hist, bins = np.histogram(samples.flatten(), bins=bins)
+        else:
+            hist, bins = np.histogram(samples.flatten(), bins=bins, density=True)
 
     else: raise NameError("'samples' type not recognized")
 

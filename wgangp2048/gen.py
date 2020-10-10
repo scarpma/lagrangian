@@ -21,44 +21,46 @@ def build_generator(fs, fm, init_sigma, init_mean, alpha, noise_dim):
     """
 
     reg = l2(l=0.001)
+    pad = 'same'
+    #pad = 'valid'
     generator = Sequential()
     # Starting size
     generator.add(Dense(64*fm, kernel_regularizer=reg, use_bias=False,
                         kernel_initializer=RandomNormal(init_mean, init_sigma),
                         input_dim=noise_dim))
     #generator.add(ELU())
-    generator.add(BatchNormalization())
     generator.add(ReLU())
     #20x1
     generator.add(Reshape((64, 1, fm)))
     #5x4
-    generator.add(Conv2DTranspose(fm//2, fs, strides=(2,1), padding='same',
+    generator.add(BatchNormalization(momentum=0.8))
+    generator.add(Conv2DTranspose(fm//2, fs, strides=(2,1), padding=pad,
                   kernel_regularizer=reg, use_bias=False,
                   kernel_initializer=RandomNormal(init_mean, init_sigma)))
     #generator.add(ELU())
-    generator.add(BatchNormalization())
     generator.add(ReLU())
     #50x4
-    generator.add(Conv2DTranspose(fm//4, fs, strides=(2,1), padding='same',
+    generator.add(BatchNormalization(momentum=0.8))
+    generator.add(Conv2DTranspose(fm//4, fs, strides=(2,1), padding=pad,
                   kernel_regularizer=reg, use_bias=False,
                   kernel_initializer=RandomNormal(init_mean, init_sigma)))
     #generator.add(ELU())
-    generator.add(BatchNormalization())
     generator.add(ReLU())
-    generator.add(Conv2DTranspose(fm//8, fs, strides=(2,1), padding='same',
+    generator.add(BatchNormalization(momentum=0.8))
+    generator.add(Conv2DTranspose(fm//8, fs, strides=(2,1), padding=pad,
                   kernel_regularizer=reg, use_bias=False,
                   kernel_initializer=RandomNormal(init_mean, init_sigma)))
     #generator.add(ELU())
-    generator.add(BatchNormalization())
     generator.add(ReLU())
     #50x4
-    generator.add(Conv2DTranspose(fm//16, fs, strides=(2,1), padding='same',
+    generator.add(BatchNormalization(momentum=0.8))
+    generator.add(Conv2DTranspose(fm//16, fs, strides=(2,1), padding=pad,
                   kernel_regularizer=reg, use_bias=False,
                   kernel_initializer=RandomNormal(init_mean, init_sigma)))
     #generator.add(ELU())
-    generator.add(BatchNormalization())
     generator.add(ReLU())
-    generator.add(Conv2DTranspose(CHANNELS,      fs, strides=(2,1), padding='same',
+    generator.add(BatchNormalization(momentum=0.8))
+    generator.add(Conv2DTranspose(CHANNELS,      fs, strides=(2,1), padding=pad,
                  kernel_regularizer=reg, use_bias=False,
                  kernel_initializer=RandomNormal(init_mean, init_sigma)))
     generator.add(Activation("tanh"))

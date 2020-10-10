@@ -15,7 +15,7 @@ import tensorflow.keras
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import RandomNormal
 from tensorflow.keras.regularizers import l2
-from tensorflow.keras.layers import (Dense, Conv1D, Conv2D, Conv2DTranspose,
+from tensorflow.keras.layers import (Dense, Conv1D, Conv2D, Conv2DTranspose, UpSampling1D,
                                      Flatten, Dropout, ReLU, Input, Reshape,
                                      BatchNormalization, Activation)
 from tensorflow.keras.models import Sequential, Model
