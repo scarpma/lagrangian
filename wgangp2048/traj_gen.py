@@ -20,7 +20,8 @@ N = int(sys.argv.pop(1))
 
 while len(sys.argv) > 1 :
     print('Unrecognized args. Exiting.')
-    exit()
+    sys.stderr.write('invalid argument')
+    sys.exit(1)
 
 from db_utils import *
 

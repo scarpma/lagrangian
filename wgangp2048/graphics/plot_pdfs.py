@@ -145,11 +145,11 @@ if read_gen:
     # SUM
     while os.path.exists(read_path_g):
         temp = np.loadtxt(read_path_g)
-        assert vg[0,:] == temp[0,:]
+        assert all(vg[0,:] == temp[0,:])
         vg[1,:] = vg[1,:] + temp[1,:]
-        assert ag[0,:] == temp[2,:]
+        assert all(ag[0,:] == temp[2,:])
         ag[1,:] = ag[1,:] + temp[3,:]
-        assert rg[0,:] == temp[4,:]
+        assert all(rg[0,:] == temp[4,:])
         rg[1,:] = rg[1,:] + temp[5,:]
         nn = nn + 1
         read_path_g = '../data/'+WGAN_TYPE+f'/runs/{run}/pdf_{run}_{number}_we_{str(nn).zfill(4)}.dat'

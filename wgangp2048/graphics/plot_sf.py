@@ -108,7 +108,7 @@ if plot_gen :
         # SUM
         while os.path.exists(sfg_path):
             temp = np.loadtxt(sfg_path)
-            assert sfg[:,0] == temp[:,0]
+            assert all(sfg[:,0] == temp[:,0])
             sfg[:,1:] = sfg[:,1:] + temp[:,1:]
             nn = nn + 1
             sfg_path = '../data/'+WGAN_TYPE+f'/runs/{run}/sf_{run}_{number}_we_{str(nn).zfill(4)}.dat'

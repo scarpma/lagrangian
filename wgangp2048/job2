@@ -1,0 +1,1 @@
+python job_many.py >& log_job_many.txt

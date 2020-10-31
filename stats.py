@@ -18,7 +18,7 @@ def create_log_bins(xmin,xmax,nbin,eps):
         return 0
 
 
-def make_hist(samples, bins='lin', std=False, out=False, hist=False):
+def make_hist(samples, bins='lin', std=False, out=False, hist=False, no_mean=None):
     import numpy as np
 
     std_done = False
@@ -45,7 +45,7 @@ def make_hist(samples, bins='lin', std=False, out=False, hist=False):
 
         import numpy
         bh = np.loadtxt(samples)
-        if std :
+        if std or out:
             std_done = True
             std = 0.
             mean = 0.
@@ -58,10 +58,15 @@ def make_hist(samples, bins='lin', std=False, out=False, hist=False):
                 std = std + ((bh[0,i+1]-bh[0,i-1])/2.)*bh[1,i]*(bh[0,i]-mean)**2.
             std = std + (bh[0,-1]-bh[0,-2])*bh[1,-1]*(bh[0,-1]-mean)**2.
             std = np.sqrt(std)
-            bh[1,:] = bh[1,:] * std
-            bh[0,:] = (bh[0,:] - mean) / std
+            if std:
+                if no_mean is None:
+                    bh[1,:] = bh[1,:] * std
+                    bh[0,:] = (bh[0,:] - mean) / std
+                elif no_mean:
+                    bh[1,:] = bh[1,:] * std
+                    bh[0,:] = bh[0,:] / std
 
-            if out : return bh, mean, std
+        if out : return bh, mean, std
 
         return bh
 
@@ -74,11 +79,13 @@ def make_hist(samples, bins='lin', std=False, out=False, hist=False):
 
     else: raise NameError("'samples' type not recognized")
 
-    if std and not std_done :
+    if (std or out) and not std_done :
         mean = samples.mean()
         std = samples.std()
-        hist = hist * std
-        bins = (bins - mean) / std
+        if std:
+            print(std)
+            hist = hist * std
+            bins = (bins - mean) / std
 
     assert len(hist) == len(bins)-1
 
@@ -90,7 +97,7 @@ def make_hist(samples, bins='lin', std=False, out=False, hist=False):
     binhist[0,:] = bins
     binhist[1,:] = hist
 
-    if std and out : return binhist, mean, std
+    if std or out : return binhist, mean, std
 
     return binhist
 
