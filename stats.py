@@ -31,15 +31,15 @@ def make_hist(samples, bins='lin', std=False, out=False, hist=False, no_mean=Non
 
         if std :
             std_done = True
-            std = 0.
+            stad = 0.
             mean = 0.
             for i in range(len(hist)):
                 mean += (bins[i+1] - bins[i])*hist[i]*(bins[i+1] + bins[i])/2
             for i in range(len(hist)):
-                std += (bins[i+1] - bins[i])*hist[i]*((bins[i+1] + bins[i])/2 - mean)**2.
-            std = np.sqrt(std)
-            hist = hist * std
-            bins = (bins - mean) / std
+                stad += (bins[i+1] - bins[i])*hist[i]*((bins[i+1] + bins[i])/2 - mean)**2.
+            stad = np.sqrt(stad)
+            hist = hist * stad
+            bins = (bins - mean) / stad
 
     elif type(samples)==type('str') and samples[-4:]==".dat" :
 
@@ -47,26 +47,26 @@ def make_hist(samples, bins='lin', std=False, out=False, hist=False, no_mean=Non
         bh = np.loadtxt(samples)
         if std or out:
             std_done = True
-            std = 0.
+            stad = 0.
             mean = 0.
             mean = mean + (bh[0,1]-bh[0,0])*bh[1,0]*bh[0,0]
             for i in range(1,bh.shape[1]-1):
                 mean = mean + ((bh[0,i+1]-bh[0,i-1])/2.)*bh[1,i]*bh[0,i]
             mean = mean + (bh[0,-1]-bh[0,-2])*bh[1,-1]*bh[0,-1]
-            std = std + (bh[0,1]-bh[0,0])*bh[1,0]*(bh[0,0]-mean)**2.
+            stad = stad + (bh[0,1]-bh[0,0])*bh[1,0]*(bh[0,0]-mean)**2.
             for i in range(1,bh.shape[1]-1):
-                std = std + ((bh[0,i+1]-bh[0,i-1])/2.)*bh[1,i]*(bh[0,i]-mean)**2.
-            std = std + (bh[0,-1]-bh[0,-2])*bh[1,-1]*(bh[0,-1]-mean)**2.
-            std = np.sqrt(std)
+                stad = stad + ((bh[0,i+1]-bh[0,i-1])/2.)*bh[1,i]*(bh[0,i]-mean)**2.
+            stad = stad + (bh[0,-1]-bh[0,-2])*bh[1,-1]*(bh[0,-1]-mean)**2.
+            stad = np.sqrt(stad)
             if std:
                 if no_mean is None:
-                    bh[1,:] = bh[1,:] * std
-                    bh[0,:] = (bh[0,:] - mean) / std
+                    bh[1,:] = bh[1,:] * stad
+                    bh[0,:] = (bh[0,:] - mean) / stad
                 elif no_mean:
-                    bh[1,:] = bh[1,:] * std
-                    bh[0,:] = bh[0,:] / std
+                    bh[1,:] = bh[1,:] * stad
+                    bh[0,:] = bh[0,:] / stad
 
-        if out : return bh, mean, std
+        if out : return bh, mean, stad
 
         return bh
 
@@ -81,11 +81,11 @@ def make_hist(samples, bins='lin', std=False, out=False, hist=False, no_mean=Non
 
     if (std or out) and not std_done :
         mean = samples.mean()
-        std = samples.std()
+        stad = samples.std()
         if std:
-            print(std)
-            hist = hist * std
-            bins = (bins - mean) / std
+            print(stad)
+            hist = hist * stad
+            bins = (bins - mean) / stad
 
     assert len(hist) == len(bins)-1
 
@@ -97,7 +97,7 @@ def make_hist(samples, bins='lin', std=False, out=False, hist=False, no_mean=Non
     binhist[0,:] = bins
     binhist[1,:] = hist
 
-    if std or out : return binhist, mean, std
+    if out : return binhist, mean, stad
 
     return binhist
 
@@ -106,7 +106,7 @@ def make_hist(samples, bins='lin', std=False, out=False, hist=False, no_mean=Non
 def compute_sf(db,npart=None):
     import ou
     import numpy as np
-    struct = np.zeros(shape=(34,4),order='f')
+    struct = np.zeros(shape=(34,7),order='f')
     if len(db.shape)==2:
         print("Database shape ok, continuing...")
         if npart != None:
