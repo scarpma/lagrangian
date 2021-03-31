@@ -1,7 +1,0 @@
-shape:  (500000, 2048, 1)
-Gen min, max:  -8.71770419666851 8.581808650963637
-Database with more than one component. Only x taken
-Taking entire dataset, None samples
-Converting database to fortran order
-(2048, 500000)
-1  2  3  4  5  6  7  8  10  12  15  18  22  26  31  38  46  55  66  79  95  114  137  164  197  237  284  341  410  492  590  708  850  1020   Done.
